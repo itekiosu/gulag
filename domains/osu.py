@@ -454,12 +454,12 @@ autoban_pp = (
     # whitelisted, and submit a score of too high caliber.
     # Values below are in form (non_fl, fl), as fl has custom
     # vals as it finds quite a few additional cheaters on the side.
-    (700,   600),   # vn!std
+    (800,   600),   # vn!std
     (UNDEF, UNDEF), # vn!taiko
     (UNDEF, UNDEF), # vn!catch
     (UNDEF, UNDEF), # vn!mania
 
-    (1200,  800),   # rx!std
+    (1500,  800),   # rx!std
     (UNDEF, UNDEF), # rx!taiko
     (UNDEF, UNDEF), # rx!catch
 

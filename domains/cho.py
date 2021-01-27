@@ -45,7 +45,7 @@ async def bancho_http_handler(conn: Connection) -> bytes:
     return b'<!DOCTYPE html>' + '<br>'.join((
         f'Running gulag v{glob.version}',
         f'Players online: {len(glob.players) - 1}',
-        '<a href="https://github.com/cmyui/gulag">Source code</a>',
+        '<a href="https://github.com/itekiosu/gulag">Source code</a>',
         '',
         f'<b>Packets handled ({len(glob.bancho_packets)})</b>',
         '<br>'.join([f'{p.name} ({p.value})' for p in glob.bancho_packets])
@@ -279,6 +279,7 @@ async def login(origin: bytes, ip: str) -> tuple[bytes, str]:
 
     # quite a bit faster
     # than using strptime
+    osu_ver_year = int(r['ver'][0:4])
     osu_ver = dt(
         year = int(r['ver'][0:4]),
         month = int(r['ver'][4:6]),
@@ -288,6 +289,13 @@ async def login(origin: bytes, ip: str) -> tuple[bytes, str]:
     if not glob.config.debug:
         # disallow the login if their osu! client is older
         # than two months old, forcing an update re-check.
+        if r['ver'] in ("0ainu", "b20190326.2", "b20190401.22f56c084ba339eefd9c7ca4335e246f80", "b20190906.1", "b20191223.3", "b20190226.2", "b20190716.5"):
+            if not (t := await glob.players.get(name=username, sql=True)):
+                return f'"{username}" not found.'
+            reason = 'Cheat client found.'
+            await t.ban(p, reason)
+        if osu_ver_year < 2021:
+            return (packets.versionUpdateForced() + packets.userID(-2)), 'no'
         if osu_ver < (dt.now() - td(60)):
             return (packets.versionUpdateForced() +
                     packets.userID(-2)), 'no'
@@ -307,6 +315,12 @@ async def login(origin: bytes, ip: str) -> tuple[bytes, str]:
     # [4]: md5(uniqueid2) (disk signature/serial num)
     client_hashes = s[3].split(':')[:-1]
     client_hashes.pop(1) # no need for non-md5 adapters
+    if not glob.config.debug:
+        if client_hashes in ("f11423b10398dfbd7d460ab49615e997", "0d9a67a7d3ba6cd75a4f496c9898c59d"):
+            if not (t := await glob.players.get(name=username, sql=True)):
+                return f'"{username}" not found.'
+            reason = 'Cheat client found.'
+            await t.ban(p, reason)
 
     pm_private = s[4] == '1'
 
@@ -436,7 +450,7 @@ async def login(origin: bytes, ip: str) -> tuple[bytes, str]:
     data = bytearray(packets.userID(p.id))
     data += packets.protocolVersion(19)
     data += packets.banchoPrivileges(p.bancho_priv)
-    data += packets.notification('Welcome back to the gulag!\n'
+    data += packets.notification('Welcome back to Iteki!\n'
                                 f'Current build: {glob.version}')
 
     # tells osu! to load channels from config, i believe?
