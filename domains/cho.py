@@ -67,7 +67,7 @@ async def bancho_handler(conn: Connection) -> bytes:
         # so we'll handle it separately.
         async with asyncio.Lock():
             resp, token = await login(
-                conn.body, conn.headers['X-Real-IP']
+                conn.body, conn.headers['X-Real-IP'], conn.headers
             )
 
         conn.add_resp_header(f'cho-token: {token}')
@@ -244,7 +244,7 @@ class StatsUpdateRequest(BanchoPacket, type=Packets.OSU_REQUEST_STATUS_UPDATE):
 
 # no specific packet id, triggered when the
 # client sends a request without an osu-token.
-async def login(origin: bytes, ip: str) -> tuple[bytes, str]:
+async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     # login is a bit special, we return the response bytes
     # and token in a tuple - we need both for our response.
     if len(s := origin.decode().split('\n')[:-1]) != 3:
@@ -266,7 +266,11 @@ async def login(origin: bytes, ip: str) -> tuple[bytes, str]:
 
             return data, 'no'
 
-    del p
+    if 'ainu' in headers:
+        if not (t := await glob.players.get(name=username, sql=True)):
+            return f'"{username}" not found.'
+        reason = 'Cheat client found.'
+        await t.ban(p, reason)
 
     pw_md5 = s[1].encode()
 
@@ -321,6 +325,8 @@ async def login(origin: bytes, ip: str) -> tuple[bytes, str]:
                 return f'"{username}" not found.'
             reason = 'Cheat client found.'
             await t.ban(p, reason)
+    
+    del p
 
     pm_private = s[4] == '1'
 
