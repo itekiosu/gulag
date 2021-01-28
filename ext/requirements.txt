@@ -9,3 +9,4 @@ orjson
 py3rijndael
 uvloop
 ipinfo
+geopy

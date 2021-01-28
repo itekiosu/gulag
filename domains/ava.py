@@ -11,10 +11,10 @@ from cmyui import Domain
 domain = Domain('a.ppy.sh')
 
 AVATARS_PATH = Path.cwd() / '.data/avatars'
-DEFAULT_AVATAR = AVATARS_PATH / 'default.jpg'
-@domain.route(re.compile(r'^/\d{1,10}(?:\.jpg)?$'))
+DEFAULT_AVATAR = AVATARS_PATH / 'default.png'
+@domain.route(re.compile(r'^/\d{1,10}(?:\.png)?$'))
 async def get_avatar(conn: Connection) -> None:
-    path = AVATARS_PATH / f'{conn.path[1:]}.jpg'
+    path = AVATARS_PATH / f'{conn.path[1:]}.png'
 
     if not path.exists():
         path = DEFAULT_AVATAR

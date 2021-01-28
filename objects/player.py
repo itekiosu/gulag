@@ -13,6 +13,7 @@ from typing import Any
 from typing import Coroutine
 from typing import Optional
 from typing import TYPE_CHECKING
+from geopy.geocoders import Nominatim
 
 from cmyui import Ansi
 from cmyui import log
@@ -689,8 +690,21 @@ class Player:
 
         # store their country as a 2-letter code, and as a number.
         # the players location is stored for the ingame world map.
-        self.country = (country_codes[country], country)
-        self.location = (float(lines[6]), float(lines[7])) # lat, long
+
+        # this is genuinely the worst thing i have ever made, desperate async friendly version needed soontm because this batters the fast login time
+        if self.priv & Privileges.Staff or self.priv & Privileges.Donator or self.priv & Privileges.Alumni:
+            res = await glob.db.fetch(
+                'SELECT country AS c FROM users '
+                'WHERE id = %s',
+                [self.id]
+            )
+            self.country = (country_codes[e.upper()], e.upper())
+            g = Nominatim(user_agent='Iteki')
+            loc = g.geocode(e.upper())
+            self.location = (float(loc.raw['lat']), float(loc.raw['lon']))
+        else:
+            self.country = (country_codes[country], country)
+            self.location = (float(lines[6]), float(lines[7])) # lat, long
 
     async def unlock_achievement(self, a: 'Achievement') -> None:
         """Unlock `ach` for `self`, storing in both cache & sql."""
