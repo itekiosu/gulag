@@ -440,7 +440,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         )
 
     # set country
-    if glob.config.geo:
+    if glob.config.geo and not user_info['priv'] & Privileges.Staff:
         info = ipinfo.getHandlerAsync(glob.config.access_token)
         details = await info.getDetails(ip)
         country = details.country.lower()
