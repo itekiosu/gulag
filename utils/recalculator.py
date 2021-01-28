@@ -79,9 +79,12 @@ class PPCalculator:
 
             # for now, we'll generate a bash command and
             # use subprocess to do the calculations (yikes).
-            cmd = [f'./oppai-ng/oppai {self.file}']
+            cmd = [f'sudo ./oppai-ng/oppai {self.file}']
 
-            if self.mods:  cmd.append(repr(self.mods))
+            # ?????????
+            plus = '+'
+            if self.mods:  cmd.append(f'{plus}{repr(self.mods)}')
+
             if self.combo: cmd.append(f'{self.combo}x')
             if self.nmiss: cmd.append(f'{self.nmiss}xM')
             if self.acc:   cmd.append(f'{self.acc:.4f}%')
@@ -89,9 +92,12 @@ class PPCalculator:
             if self.mode:
                 mode_vn = self.mode.as_vanilla
 
-                cmd.append(f'-m{mode_vn}')
-                if mode_vn == GameMode.vn_taiko:
-                    cmd.append('-otaiko')
+                if self.mode == GameMode.vn_taiko or self.mode == GameMode.rx_taiko:
+                    cmd.append('-m1')
+                else:
+                    cmd.append(f'-m{mode_vn}')
+                if self.mode == GameMode.vn_taiko or self.mode == GameMode.rx_taiko:
+                    cmd.append('-taiko')
 
             # XXX: could probably use binary to save a bit
             # of time.. but in reality i should just write

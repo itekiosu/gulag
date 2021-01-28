@@ -757,8 +757,26 @@ class Player:
             'AND priv & 1',
             [stats.pp]
         )
+        res1 = await glob.db.fetch(
+            'SELECT COUNT(*) AS c FROM stats '
+            'LEFT JOIN users USING(id) '
+            f'WHERE pp_{mode:sql} > %s '
+            'AND priv & 1 AND users.country = %s',
+            [stats.pp, self.country]
+        )
 
         stats.rank = res['c'] + 1
+        crank = res1['c'] + 1
+        await glob.db.execute(
+            'UPDATE stats SET rank_{0:sql} = %s '
+            'WHERE id = %s'.format(mode),
+            [stats.rank, self.id]
+        )
+        await glob.db.execute(
+            'UPDATE stats SET crank_{0:sql} = %s '
+            'WHERE id = %s'.format(mode),
+            [crank, self.id]
+        )
         self.enqueue(packets.userStats(self))
 
     async def friends_from_sql(self) -> None:
