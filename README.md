@@ -1,4 +1,4 @@
-[![Discord](https://discordapp.com/api/guilds/748687781605408908/widget.png?style=shield)](https://discord.gg/ShEQgUx)
+[![Discord](https://discordapp.com/api/guilds/804029976276893716/widget.png?style=shield)](https://discord.gg/tRkHttxGV4)
 
 Table of Contents
 ==================
