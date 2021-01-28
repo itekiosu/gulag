@@ -698,13 +698,10 @@ class Player:
                 'WHERE id = %s',
                 [self.id]
             )
+            e = res['c']
             self.country = (country_codes[e.upper()], e.upper())
-            g = Nominatim(user_agent='Iteki')
-            loc = g.geocode(e.upper())
-            self.location = (float(loc.raw['lat']), float(loc.raw['lon']))
         else:
             self.country = (country_codes[country], country)
-            self.location = (float(lines[6]), float(lines[7])) # lat, long
 
     async def unlock_achievement(self, a: 'Achievement') -> None:
         """Unlock `ach` for `self`, storing in both cache & sql."""

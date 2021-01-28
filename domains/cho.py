@@ -451,7 +451,6 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
             [country, user_info['id']]
         )
 
-
     # get clan & clan rank if we're in a clan
     if user_info['clan_id'] != 0:
         clan = glob.clans.get(id=user_info.pop('clan_id'))
