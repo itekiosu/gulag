@@ -14,6 +14,7 @@ from cmyui import Domain
 from cmyui import log
 
 import packets
+import ipinfo
 from constants import commands
 from constants import regexes
 from constants.gamemodes import GameMode
@@ -438,6 +439,19 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
             [user_info['priv'], user_info['id']]
         )
 
+    # set country
+    if glob.config.geo:
+        info = ipinfo.getHandlerAsync(glob.config.access_token)
+        details = await info.getDetails(ip)
+        country = details.country.lower()
+        await glob.db.execute(
+            'UPDATE users '
+            'SET country = %s '
+            'WHERE id = %s',
+            [country, user_info['id']]
+        )
+
+
     # get clan & clan rank if we're in a clan
     if user_info['clan_id'] != 0:
         clan = glob.clans.get(id=user_info.pop('clan_id'))
@@ -456,8 +470,11 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     data = bytearray(packets.userID(p.id))
     data += packets.protocolVersion(19)
     data += packets.banchoPrivileges(p.bancho_priv)
-    data += packets.notification('Welcome back to Iteki!\n'
-                                f'Current build: {glob.version}')
+    if not first_login:
+        data += packets.notification('Welcome back to Iteki!\n'
+                                    f'Current build: {glob.version}')
+    else:
+        data += packets.notification('Welcome to Iteki!\nIf you need any help please join our Discord (https://iteki.pw/discord) and use !help to see all available commands.\n\nEnjoy!')
 
     # tells osu! to load channels from config, i believe?
     data += packets.channelInfoEnd()
@@ -524,8 +541,6 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
             msg['from'], msg_ts,
             msg['to'], msg['from_id']
         )
-
-    # TODO: add a registration message if `first_login` == True?
 
     # TODO: enqueue ingame admin panel to staff members.
     """

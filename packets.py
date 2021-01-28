@@ -946,7 +946,7 @@ def userPresence(p: 'Player') -> bytes:
         (p.gm_stats.rank, osuTypes.i32)
     ) if p is not glob.bot else ( # default for bot
         b'S\x00\x00\x19\x00\x00\x00\x01\x00\x00\x00'
-        b'\x0b\x04Aika\x14&\x1f\x00\x00\x9d\xc2\x00'
+        b'\x0b\x04Ruji\x14&\x1f\x00\x00\x9d\xc2\x00'
         b'\x000B\x00\x00\x00\x00'
     )
 

@@ -179,7 +179,7 @@ async def last(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
 async def _with(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     """Specify custom accuracy & mod combinations with `/np`."""
     if c is not glob.bot:
-        return 'This command can only be used in DM with Aika.'
+        return 'This command can only be used in DM with Ruji.'
 
     if not p.last_np:
         return 'Please /np a map first!'

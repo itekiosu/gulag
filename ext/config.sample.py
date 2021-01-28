@@ -129,3 +129,10 @@ datadog = {
     'api_key': '',
     'app_key': ''
 }
+
+# used for geolocation
+# if you do not wish to use this (means database wont insert user flags) then make this false
+geo = True
+# if you are using true, you need to get an access token here: 
+# leave these blank if you aren't using geo
+access_token = ''
