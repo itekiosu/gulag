@@ -561,16 +561,19 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
     elif "HT" in to_readable(int(s.mods)):
         length = length // 0.75
 
-    if int(length) < (int(mp_args['st'])//1000) and mp_args['ft'] == 0 and not mp_args['x']:
+    if int(length) != (int(mp_args['st'])//1000) and mp_args['ft'] == 0 and not mp_args['x']:
         # timewarp!!
         log(f'{s.player} banned for submitting a score with timewarp on gm {s.mode!r}.', Ansi.LRED)
         await s.player.ban(glob.bot, f'[{s.mode!r}] autoban for timewarp')
-        return b'error: ban'
-
-    if int(length) > (int(mp_args['st'])//1000) and mp_args['ft'] == 0 and not mp_args['x']:
-        # timewarp!!
-        log(f'{s.player} banned for submitting a score with timewarp on gm {s.mode!r}.', Ansi.LRED)
-        await s.player.ban(glob.bot, f'[{s.mode!r}] autoban for timewarp')
+        webhook_url = glob.config.webhooks['audit-log']
+        webhook = Webhook(url=webhook_url)
+        embed = Embed(title = f'New user')
+        embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"http://a.{glob.config.domain}/{user_info['id']}")
+        thumb_url = f'http://a.{glob.config.domain}/1'
+        embed.set_thumbnail(url=thumb_url)
+        embed.add_field(name = f'{username} for using timewarp.', inline = True)
+        webhook.add_embed(embed)
+        await webhook.post(glob.http)
         return b'error: ban'
 
     # we should update their activity no matter

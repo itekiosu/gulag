@@ -440,7 +440,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
             [user_info['priv'], user_info['id']]
         )
 
-        webhook_url = glob.config.webhooks['audit_log']
+        webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'New user')
         embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"http://a.{glob.config.domain}/{user_info['id']}")
