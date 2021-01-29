@@ -11,6 +11,7 @@ from cmyui import _isdecimal
 from cmyui import Ansi
 from cmyui import Connection
 from cmyui import Domain
+from cmyui.discord import Webhook, Embed
 from cmyui import log
 
 import packets
@@ -326,7 +327,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
                 return f'"{username}" not found.'
             reason = 'Cheat client found.'
             await t.ban(p, reason)
-    
+
     del p
 
     pm_private = s[4] == '1'
@@ -438,6 +439,16 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
             'WHERE id = %s',
             [user_info['priv'], user_info['id']]
         )
+
+        webhook_url = glob.config.webhooks['audit_log']
+        webhook = Webhook(url=webhook_url)
+        embed = Embed(title = f'New user')
+        embed.set_author(url = f"https://iteki.pw/u/{user_info['id']}", name = username, icon_url = f"http://a.iteki.pw/{user_info['id']}")
+        thumb_url = 'http://a.iteki.pw/1'
+        embed.set_thumbnail(url=thumb_url)
+        embed.add_field(name = f'New user {username} has registered & verified.', inline = True)
+        webhook.add_embed(embed)
+        await webhook.post(glob.http)
 
     # set country
     if glob.config.geo and not user_info['priv'] & Privileges.Staff:

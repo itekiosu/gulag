@@ -1,13 +1,6 @@
 #!/usr/bin/python3.9
 # -*- coding: utf-8 -*-
 
-# if you're interested in development, my test server is
-# usually up at 51.161.34.235. just switch the ip of any
-# switcher to the one above, toggle it off and on again, and
-# you should be connected. registration is done ingame with
-# osu!'s built-in registration.
-# certificate: https://akatsuki.pw/static/ca.crt
-
 import asyncio
 import lzma
 import os

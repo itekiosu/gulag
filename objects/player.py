@@ -762,7 +762,7 @@ class Player:
             'LEFT JOIN users USING(id) '
             f'WHERE pp_{mode:sql} > %s '
             'AND priv & 1 AND users.country = %s',
-            [stats.pp, self.country]
+            [stats.pp, self.country[1]]
         )
 
         stats.rank = res['c'] + 1

@@ -21,7 +21,7 @@ __all__ = (
 
 def point_of_interest():
     """Leave a pseudo-breakpoint somewhere to ask the user if
-       they could pls submit their stacktrace to cmyui <3."""
+       they could pls submit their stacktrace to mbruhyo <3."""
 
     ver_str = f'Running gulag v{glob.version!r} | cmyui_pkg v{cmyui.__version__}'
     printc(ver_str, Ansi.LBLUE)
@@ -41,8 +41,8 @@ def point_of_interest():
     msg_str = '\n'.join((
         "Hey! If you're seeing this, osu! just did something pretty strange,",
         "and the gulag devs have left a breakpoint here. We'd really appreciate ",
-        "if you could screenshot the data above, and send it to cmyui, either via ",
-        "Discord (cmyui#0425), or by email (cmyuiosu@gmail.com). Thanks! 😳😳😳"
+        "if you could screenshot the data above, and send it to cmyui, via ",
+        "Discord (mbruhyo#8551). Thanks! 😳😳😳"
     ))
 
     printc(msg_str, Ansi.LRED)
