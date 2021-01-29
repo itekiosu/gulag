@@ -15,6 +15,9 @@ from typing import Union
 
 import cmyui
 
+from cmyui import Ansi
+from cmyui import log
+
 import packets
 from constants import regexes
 from constants.mods import Mods
@@ -499,7 +502,42 @@ async def recalc(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         if not p.priv & Privileges.Dangerous:
             return 'This command is limited to developers.'
 
-        return 'TODO'
+        async for bmap in glob.db.iterall('SELECT id, md5 FROM maps WHERE status = 2'):
+            ppcalc = await PPCalculator.from_id(bmap['id'])
+            if not ppcalc:
+                return 'Could not retrieve map file.'
+
+            log(f"Performing full recalc on map {bmap['id']}.", Ansi.RED)
+
+            for table in ('scores_vn', 'scores_rx', 'scores_ap'):
+                # fetch all scores from the table on this map
+                scores = await glob.db.fetchall(
+                    'SELECT id, acc, mods, max_combo, '
+                    'n300, n100, n50, nmiss, ngeki, nkatu '
+                    f'FROM {table} WHERE map_md5 = %s '
+                    'AND status = 2 AND mode = 0',
+                    [bmap['md5']]
+                )
+
+                score_counts.append(len(scores))
+
+                if not scores:
+                    continue
+
+                for score in scores:
+                    ppcalc.mods = Mods(score['mods'])
+                    ppcalc.combo = score['max_combo']
+                    ppcalc.nmiss = score['nmiss']
+                    ppcalc.acc = score['acc']
+
+                    pp, _ = await ppcalc.perform() # sr not needed
+
+                    await glob.db.execute(
+                        f'UPDATE {table} '
+                        'SET pp = %s '
+                        'WHERE id = %s',
+                        [pp, score['id']]
+                    )
 
     recap = '{0} vn | {1} rx | {2} ap'.format(*score_counts)
     return f'Recalculated {sum(score_counts)} ({recap}) scores.'

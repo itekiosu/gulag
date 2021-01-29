@@ -2032,6 +2032,7 @@ async def get_updated_beatmap(conn: Connection) -> Optional[bytes]:
 
 @domain.route('/users', methods=['POST'])
 async def register_account(conn: Connection) -> Optional[bytes]:
+    return (400, b'Please sign up on the website as we are currently key only!')
     mp_args = conn.multipart_args
 
     name = mp_args['user[username]']
