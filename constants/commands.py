@@ -502,7 +502,7 @@ async def recalc(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         if not p.priv & Privileges.Dangerous:
             return 'This command is limited to developers.'
 
-        async for bmap in glob.db.iterall('SELECT id, md5 FROM maps WHERE status = 2'):
+        async for bmap in glob.db.iterall('SELECT id, md5 FROM maps WHERE status = 2 AND passes > 0'):
             ppcalc = await PPCalculator.from_id(bmap['id'])
             if not ppcalc:
                 return 'Could not retrieve map file.'

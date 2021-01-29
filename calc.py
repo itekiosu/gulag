@@ -8,7 +8,7 @@ async def recalc():
         db = cmyui.AsyncSQLPool()
         await db.connect(config.mysql)
         score_counts = []
-        async for bmap in db.iterall('SELECT id, md5 FROM maps WHERE status = 2'):
+        async for bmap in db.iterall('SELECT id, md5 FROM maps WHERE status = 2 AND passes > 0'):
             ppcalc = await PPCalculator.from_id(bmap['id'])
             if not ppcalc:
                 return 'Could not retrieve map file.'
