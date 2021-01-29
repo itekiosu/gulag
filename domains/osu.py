@@ -545,6 +545,34 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         # XXX: Perhaps will accept in the future,
         return b'error: no' # not now though.
 
+
+    url = f'{glob.config.mirror}/b/{s.bmap.id}'
+    async with glob.http.get(url) as resp:
+        if not resp or resp.status != 200:
+            return b'Failed to retrieve data from mirror!'
+
+        result = await resp.json()
+
+    length = result['TotalLength']
+    if "DT" in to_readable(int(s.mods)):
+        length = length // 1.5
+    elif "NC" in to_readable(int(s.mods)):
+        length = length // 1.5
+    elif "HT" in to_readable(int(s.mods)):
+        length = length // 0.75
+
+    if int(length) < (int(mp_args['st'])//1000) and mp_args['ft'] == 0 and not mp_args['x']:
+        # timewarp!!
+        log(f'{s.player} banned for submitting a score with timewarp on gm {s.mode!r}.', Ansi.LRED)
+        await s.player.ban(glob.bot, f'[{s.mode!r}] autoban for timewarp')
+        return b'error: ban'
+
+    if int(length) > (int(mp_args['st'])//1000) and mp_args['ft'] == 0 and not mp_args['x']:
+        # timewarp!!
+        log(f'{s.player} banned for submitting a score with timewarp on gm {s.mode!r}.', Ansi.LRED)
+        await s.player.ban(glob.bot, f'[{s.mode!r}] autoban for timewarp')
+        return b'error: ban'
+
     # we should update their activity no matter
     # what the result of the score submission is.
     await s.player.update_latest_activity()
