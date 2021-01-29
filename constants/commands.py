@@ -498,7 +498,7 @@ async def recalc(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
                 )
 
     else:
-        # recalculate all scores on every map // i dont recommend running this on production as its unstable and will probably run gulag, see calc.py
+        # recalculate all scores on every map
         if not p.priv & Privileges.Dangerous:
             return 'This command is limited to developers.'
 
@@ -506,9 +506,6 @@ async def recalc(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
             ppcalc = await PPCalculator.from_id(bmap['id'])
             if not ppcalc:
                 return 'Could not retrieve map file.'
-
-            await c.send(glob.bot, f'Doing this is not recommended! Do not be surprised if gulag crashes...')
-            log(f"Performing full recalc on map {bmap['id']}.", Ansi.RED)
 
             for table in ('scores_vn', 'scores_rx', 'scores_ap'):
                 # fetch all scores from the table on this map
@@ -540,8 +537,7 @@ async def recalc(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
                         [pp, score['id']]
                     )
 
-    recap = '{0} vn | {1} rx | {2} ap'.format(*score_counts)
-    return f'Recalculated {sum(score_counts)} ({recap}) scores.'
+    return f'Recalculated {sum(score_counts)} scores.'
 
 # NOTE: this is pretty useless since it doesn't switch anything other
 # than the c[e4-6].ppy.sh domains; it exists on bancho as a tournament
