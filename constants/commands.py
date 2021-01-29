@@ -498,7 +498,7 @@ async def recalc(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
                 )
 
     else:
-        # recalculate all scores on every map
+        # recalculate all scores on every map // i dont recommend running this on production as its unstable and will probably run gulag, see calc.py
         if not p.priv & Privileges.Dangerous:
             return 'This command is limited to developers.'
 
@@ -507,6 +507,7 @@ async def recalc(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
             if not ppcalc:
                 return 'Could not retrieve map file.'
 
+            await c.send(glob.bot, f'Doing this is not recommended! Do not be surprised if gulag crashes...')
             log(f"Performing full recalc on map {bmap['id']}.", Ansi.RED)
 
             for table in ('scores_vn', 'scores_rx', 'scores_ap'):
