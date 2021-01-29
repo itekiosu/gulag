@@ -443,8 +443,8 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         webhook_url = glob.config.webhooks['audit_log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'New user')
-        embed.set_author(url = f"https://iteki.pw/u/{user_info['id']}", name = username, icon_url = f"http://a.iteki.pw/{user_info['id']}")
-        thumb_url = 'http://a.iteki.pw/1'
+        embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"http://a.{glob.config.domain}/{user_info['id']}")
+        thumb_url = f'http://a.{glob.config.domain}/1'
         embed.set_thumbnail(url=thumb_url)
         embed.add_field(name = f'New user {username} has registered & verified.', inline = True)
         webhook.add_embed(embed)

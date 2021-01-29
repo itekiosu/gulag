@@ -237,6 +237,20 @@ async def run_detections() -> None:
     while score := await queue.get():
         loop.create_task(analyze_score(score))
 
+async def update_stats():
+    try:
+        res = await glob.db.fetch('SELECT COUNT(id) AS users FROM users')
+        total_users = int(res['users'])
+        await glob.db.execute(f'UPDATE server_stats SET online = {len(glob.players)}')
+        await glob.db.execute(f'UPDATE server_stats SET total = {total_users}')
+        await asyncio.sleep(30)
+    except AttributeError:
+        await asyncio.sleep(10)
+        res = await glob.db.fetch('SELECT COUNT(id) AS users FROM users')
+        total_users = int(res['users'])
+        await glob.db.execute(f'UPDATE server_stats SET online = {len(glob.players)}')
+        await glob.db.execute(f'UPDATE server_stats SET total = {total_users}')
+
 if __name__ == '__main__':
     # set cwd to /gulag.
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
@@ -278,4 +292,5 @@ if __name__ == '__main__':
     else:
         glob.datadog = None
 
+    app.add_task(update_stats())
     app.run(glob.config.server_addr) # blocking call
