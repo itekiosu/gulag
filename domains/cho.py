@@ -446,7 +446,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
         thumb_url = f'https://a.{glob.config.domain}/1'
         embed.set_thumbnail(url=thumb_url)
-        embed.add_field(name = 'New user', value = f'{username} has registered & verified.', inline = True)
+        embed.add_field(name = 'New verified user', value = f'{username} has been verified.', inline = True)
         webhook.add_embed(embed)
         await webhook.post(glob.http)
 
