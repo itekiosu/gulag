@@ -571,7 +571,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"http://a.{glob.config.domain}/{user_info['id']}")
         thumb_url = f'http://a.{glob.config.domain}/1'
         embed.set_thumbnail(url=thumb_url)
-        embed.add_field(name = f'{username} for using timewarp.', inline = True)
+        embed.add_field(name = 'Anticheat', value = f'{username} for using timewarp.', inline = True)
         webhook.add_embed(embed)
         await webhook.post(glob.http)
         return b'error: ban'

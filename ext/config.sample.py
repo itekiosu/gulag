@@ -95,6 +95,9 @@ webhooks = {
     # & unusual activity auto-detected;
     # described in more detail below.
     'surveillance': '',
+
+    # map status updates
+    'ranked': '',
 }
 
 """ gulag score surveillance """

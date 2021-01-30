@@ -12,11 +12,13 @@ from typing import Optional
 from typing import Sequence
 from typing import TYPE_CHECKING
 from typing import Union
+from discord_webhook import DiscordWebhook, DiscordEmbed
 
 import cmyui
 
 from cmyui import Ansi
 from cmyui import log
+from cmyui.discord import Webhook, Embed
 
 import packets
 from constants import regexes
@@ -178,6 +180,27 @@ async def last(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
 # TODO: !top (get top #1 score)
 # TODO: !compare (compare to previous !last/!top post's map)
 
+@command(Privileges.Normal, hidden=True, aliases=['request'])
+async def _req(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
+    if (
+        len(msg) != 2 or
+        msg[0] not in ('rank', 'unrank', 'love') or
+        msg[1] not in ('set', 'map')
+    ):
+        return 'Invalid syntax: !req <rank/unrank/love> <map/set>'
+
+    if not p.last_np:
+        return 'You must /np a map first!'
+
+    if msg[1] == "set":
+        reqid = p.last_np.set_id
+    else:
+        reqid = p.last_np.id
+
+    await glob.db.execute("INSERT INTO requests(requester, map, status, type) VALUES (%s, %s, %s, %s)", [p.name, reqid, msg[0], msg[1]])
+
+    return 'Request sent!'
+
 @command(Privileges.Normal, hidden=True)
 async def _with(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     """Specify custom accuracy & mod combinations with `/np`."""
@@ -242,6 +265,168 @@ status_to_id = lambda s: {
     'rank': 2,
     'love': 5
 }[s]
+
+@command(Privileges.Nominator, hidden=True)
+async def _requests(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
+    async def rank():
+        nsr = 2
+        if request["type"] == 'set':
+            # update whole set
+            await glob.db.execute(
+                'UPDATE maps SET status = %s, '
+                'frozen = 1 WHERE set_id = %s',
+                [nsr, request["map"]]
+            )
+
+            await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
+
+            for cached in glob.cache['beatmap'].values():
+                # not going to bother checking timeout
+                if cached['map'].set_id == request['map']:
+                    cached['map'].status = RankedStatus(nsr)
+
+            p.enqueue(packets.notification('Mapset status updated!'))
+            u = await glob.players.get(name=request["requester"])
+            await u.send(glob.bot, f"Your request to {request['status']} {embed} was approved. The map is now ranked!")
+        else:
+            # update only map
+            await glob.db.execute(
+                'UPDATE maps SET status = %s, '
+                'frozen = 1 WHERE id = %s',
+                [nsr, request['map']]
+            )
+
+            await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
+
+            p.enqueue(packets.notification('Map status updated!'))
+            u = await glob.players.get(name=request["requester"])
+            await u.send(glob.bot, f"Your request to {request['status']} {embed} was approved. The map is now ranked!")
+
+            for cached in glob.cache['beatmap'].values():
+                # not going to bother checking timeout
+                if cached['map'] is request['map']:
+                    cached['map'].status = RankedStatus(nsr)
+                    break
+
+    async def unrank():
+        nsu = 0
+        if request["type"] == 'set':
+            # update whole set
+            await glob.db.execute(
+                'UPDATE maps SET status = %s, '
+                'frozen = 1 WHERE set_id = %s',
+                [nsu, request["map"]]
+            )
+
+            await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
+
+            for cached in glob.cache['beatmap'].values():
+                # not going to bother checking timeout
+                if cached['map'].set_id == request['map']:
+                    cached['map'].status = RankedStatus(nsu)
+
+            p.enqueue(packets.notification('Mapset status updated!'))
+            u = await glob.players.get(name=request["requester"])
+            await u.send(glob.bot, f"Your request to {request['status']} {embed} was approved. The map is now unranked!")
+        else:
+            # update only map
+            await glob.db.execute(
+                'UPDATE maps SET status = %s, '
+                'frozen = 1 WHERE id = %s',
+                [nsu, request['map']]
+            )
+
+            await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
+
+            p.enqueue(packets.notification('Map status updated!'))
+            u = await glob.players.get(name=request["requester"])
+            await u.send(glob.bot, f"Your request to {request['status']} {embed} was approved. The map is now unranked!")
+
+            for cached in glob.cache['beatmap'].values():
+                # not going to bother checking timeout
+                if cached['map'] is request['map']:
+                    cached['map'].status = RankedStatus(nsu)
+                    break
+
+    async def love():
+        if request["type"] == 'set':
+            # update whole set
+            await glob.db.execute(
+                'UPDATE maps SET status = 5, '
+                'frozen = 1 WHERE set_id = %s',
+                [request["map"]]
+            )
+
+            await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
+
+            for cached in glob.cache['beatmap'].values():
+                # not going to bother checking timeout
+                if cached['map'].set_id == request['map']:
+                    cached['map'].status = RankedStatus(5)
+
+            p.enqueue(packets.notification('Mapset status updated!'))
+            u = await glob.players.get(name=request["requester"])
+            await u.send(glob.bot, f"Your request to {request['status']} {embed} was approved. The map is now loved!")
+        else:
+            # update only map
+            await glob.db.execute(
+                'UPDATE maps SET status = 5, '
+                'frozen = 1 WHERE id = %s',
+                [request['map']]
+            )
+
+            await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
+
+            p.enqueue(packets.notification('Map status updated!'))
+            u = await glob.players.get(name=request["requester"])
+            await u.send(glob.bot, f"Your request to {request['status']} {embed} was approved. The map is now loved!")
+
+            for cached in glob.cache['beatmap'].values():
+                # not going to bother checking timeout
+                if cached['map'] is request['map']:
+                    cached['map'].status = RankedStatus(5)
+                    break
+   
+    async def deny():
+        p.enqueue(packets.notification('Request denied!'))
+        u = await glob.players.get(name=request["requester"])
+        await u.send(glob.bot, f"Your request to {request['status']} {embed} was denied. The map's status has been unchanged.")
+
+    async for request in glob.db.iterall('SELECT id, requester, map, status, type FROM requests'):
+        if request["status"] == 'rank':
+            ns = 'ranked'
+        elif request["status"] == 'love':
+            ns = 'loved'
+        else:
+            ns = 'unranked'
+        
+        if request["type"] == 'set':
+            m = 'set_id'
+        else:
+            m = 'id'
+
+        e = await glob.db.fetch(f'SELECT version, artist, title FROM maps WHERE {m} = {request["map"]}')
+        if request["type"] == 'set':
+            typem = 's'
+            diff = ''
+        else:
+            typem = 'b'
+            diff = f"[{e['version']}]"
+        
+        artist = e['artist']
+        title = e['title']
+        embed = f"[https://osu.ppy.sh/{typem}/{request['map']} {artist} - {title} {diff}]"
+        rankm = await p.add_to_menu(rank)
+        lovem = await p.add_to_menu(love)
+        unrankm = await p.add_to_menu(unrank)
+        denym = await p.add_to_menu(deny)
+        embedr = f'[osu://dl/{rankm} Rank]'
+        embedl = f'[osu://dl/{lovem} Love]'
+        embedu = f'[osu://dl/{unrankm} Unrank]'
+        embedd = f"[osu://dl/{denym} Deny (don't change status)]"
+        await p.send(glob.bot, f'Request #{request["id"]}: {request["requester"]} requested {request["type"]} {embed} to be {ns}.')
+    return f'All requests read.'
+
 @command(Privileges.Nominator)
 async def _map(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     """Changes the ranked status of the most recently /np'ed map."""
@@ -256,6 +441,27 @@ async def _map(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         return 'You must /np a map first!'
 
     new_status = status_to_id(msg[0])
+    if msg[0] == 'rank':
+        ns = 'ranked'
+    elif msg[0] == 'love':
+        ns = 'loved'
+    else:
+        ns = 'unranked'
+    
+    webhook_url = glob.config.webhooks['ranked']
+    webhook = Webhook(url=webhook_url)
+    embed = Embed(title = f'')
+    embed.set_author(url = f"https://{glob.config.domain}/u/{p.id}", name = p.name, icon_url = f"https://a.{glob.config.domain}/{p.id}")
+    thumb_url = f'https://assets.ppy.sh/beatmaps/{p.last_np.set_id}/covers/card.jpg'
+    embed.set_image(url=thumb_url)
+    if msg[1] != 'set':
+        diff = f'[{p.last_np.version}]'
+    else:
+        diff = ''
+    embed.add_field(name = f'New {ns} map', value = f'{p.last_np.artist} - {p.last_np.title} {diff} is now {ns}', inline = True)
+    webhook.add_embed(embed)
+    await webhook.post(glob.http)
+
 
     # update sql & cache based on scope
     # XXX: not sure if getting md5s from sql

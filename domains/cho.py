@@ -81,7 +81,7 @@ async def bancho_handler(conn: Connection) -> bytes:
     if not player:
         # token was not found; changes are, we just restarted
         # the server. just tell their client to re-connect.
-        return packets.notification('Server is restarting') + \
+        return packets.notification('Server is restarting..\n\nThis may happen often and please dont panic!\nAny scores you set will still submit as long as your game remains open, and you will be automatically logged back in within 1-2 seconds.') + \
                packets.restartServer(0) # send 0ms since server is up
 
     # bancho connections can be comprised of multiple packets;
@@ -442,11 +442,11 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
 
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
-        embed = Embed(title = f'New user')
-        embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"http://a.{glob.config.domain}/{user_info['id']}")
-        thumb_url = f'http://a.{glob.config.domain}/1'
+        embed = Embed(title = f'')
+        embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
+        thumb_url = f'https://a.{glob.config.domain}/1'
         embed.set_thumbnail(url=thumb_url)
-        embed.add_field(name = f'New user {username} has registered & verified.', inline = True)
+        embed.add_field(name = 'New user', value = f'{username} has registered & verified.', inline = True)
         webhook.add_embed(embed)
         await webhook.post(glob.http)
 
