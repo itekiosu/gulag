@@ -448,7 +448,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         embed.set_thumbnail(url=thumb_url)
         embed.add_field(name = 'New verified user', value = f'{username} has been verified.', inline = True)
         webhook.add_embed(embed)
-        await webhook.post(glob.http)
+        await webhook.post()
 
     # set country
     if glob.config.geo and not user_info['priv'] & Privileges.Staff:

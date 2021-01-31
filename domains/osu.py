@@ -573,7 +573,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         embed.set_thumbnail(url=thumb_url)
         embed.add_field(name = 'Anticheat', value = f'{username} for using timewarp.', inline = True)
         webhook.add_embed(embed)
-        await webhook.post(glob.http)
+        await webhook.post()
         return b'error: ban'
 
     # we should update their activity no matter

@@ -222,7 +222,7 @@ async def analyze_score(score: 'Score') -> None:
                 )
 
             webhook.add_embed(embed)
-            await webhook.post(glob.http)
+            await webhook.post()
 
 REPLAYS_PATH = Path.cwd() / '.data/osr'
 async def run_detections() -> None:

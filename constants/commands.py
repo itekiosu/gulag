@@ -12,7 +12,6 @@ from typing import Optional
 from typing import Sequence
 from typing import TYPE_CHECKING
 from typing import Union
-from discord_webhook import DiscordWebhook, DiscordEmbed
 
 import cmyui
 
@@ -460,7 +459,7 @@ async def _map(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         diff = ''
     embed.add_field(name = f'New {ns} map', value = f'{p.last_np.artist} - {p.last_np.title} {diff} is now {ns}', inline = True)
     webhook.add_embed(embed)
-    await webhook.post(glob.http)
+    await webhook.post()
 
 
     # update sql & cache based on scope
