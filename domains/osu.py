@@ -1151,7 +1151,7 @@ async def getScores(p: 'Player', conn: Connection) -> Optional[bytes]:
         f"FROM {table} s "
         "LEFT JOIN users u ON u.id = s.userid "
         "LEFT JOIN clans c ON c.id = u.clan_id "
-        "WHERE s.map_md5 = %s AND s.status = 2 AND mode = %s"
+        "WHERE s.map_md5 = %s AND s.status = 2 AND mode = %s AND u.priv > 2"
     ]
 
     params = [map_md5, conn.args['m']]
