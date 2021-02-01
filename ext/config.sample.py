@@ -98,6 +98,9 @@ webhooks = {
 
     # map status updates
     'ranked': '',
+
+    # send requests to nominators
+    'requests': '',
 }
 
 """ gulag score surveillance """
