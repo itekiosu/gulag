@@ -671,7 +671,12 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
             # client compressed with LZMA; this compression can
             # be improved pretty decently by serializing it
             # manually, so we'll probably do that in the future.
-            replay_file = REPLAYS_PATH / f'{s.id}.osr'
+            if "RX" in to_readable(int(s.mods)):
+                replay_file = REPLAYS_PATH_RX / f'{s.id}.osr'
+            elif "AP" in to_readable(int(s.mods)):
+                replay_file = REPLAYS_PATH_AP / f'{s.id}.osr'
+            else:
+                replay_file = REPLAYS_PATH / f'{s.id}.osr'
             replay_file.write_bytes(conn.files['score'])
 
             # TODO: if a play is sketchy.. 🤠
@@ -871,6 +876,8 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
     return ret
 
 REPLAYS_PATH = Path.cwd() / '.data/osr'
+REPLAYS_PATH_RX = Path.cwd() / '.data/osr_rx'
+REPLAYS_PATH_AP = Path.cwd() / '.data/osr_ap'
 @domain.route('/web/osu-getreplay.php')
 @required_args({'u', 'h', 'm', 'c'})
 @get_login('u', 'h')
@@ -880,6 +887,16 @@ async def getReplay(p: 'Player', conn: Connection) -> Optional[bytes]:
     # osu! expects empty resp for no replay
     if replay_file.exists():
         return replay_file.read_bytes()
+    else:
+        replay_file = REPLAYS_PATH_RX / f'{conn.args["c"]}.osr'
+
+    if replay_file.exists():
+        return replay_file.read_bytes()
+    else:
+        replay_file = REPLAYS_PATH_AP / f'{conn.args["c"]}.osr'
+
+    if replay_file.exists():
+        return replay_file.read_bytes
 
 # XXX: going to be slightly more annoying than expected to set this up :P
 #@domain.route('/web/osu-session.php', methods=['POST'])

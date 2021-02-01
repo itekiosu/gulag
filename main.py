@@ -259,7 +259,7 @@ if __name__ == '__main__':
     data_path = Path.cwd() / '.data'
     data_path.mkdir(exist_ok=True)
 
-    for sub_dir in ('avatars', 'logs', 'osu', 'osr', 'ss'):
+    for sub_dir in ('avatars', 'logs', 'osu', 'osr', 'ss', 'osr_rx', 'osr_ap'):
         subdir = data_path / sub_dir
         subdir.mkdir(exist_ok=True)
 
