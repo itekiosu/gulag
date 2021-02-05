@@ -109,6 +109,18 @@ def command(priv: Privileges, aliases: list[str] = [],
 # and are granted to any unbanned players.
 """
 
+@command(Privileges.Normal, hidden=True)
+async def _lbpp(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
+    check = await glob.db.fetch(f'SELECT lb_pp FROM stats WHERE id = {p.id}')
+    if check['lb_pp'] == 0:
+        on = 1
+        thing = 'pp'
+    else:
+        on = 0
+        thing = 'score'
+    await glob.db.execute(f'UPDATE stats SET lb_pp = {on} WHERE id = {p.id}')
+    return f'Relax leaderboards set to {thing}!'
+
 @command(Privileges.Normal, aliases=['h'], hidden=True)
 async def _help(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     """Show information of all documented commands the player can access."""
@@ -721,6 +733,13 @@ async def ban(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     reason = ' '.join(msg[1:])
 
     await t.ban(p, reason)
+    webhook_url = glob.config.webhooks['audit-log']
+    webhook = Webhook(url=webhook_url)
+    embed = Embed(title = f'')
+    embed.set_author(url = f"https://{glob.config.domain}/u/{p.id}", name = username, icon_url = f"https://a.{glob.config.domain}/{p.id}")
+    embed.add_field(name = 'New banned user', value = f'{t.name} has been banned by {p.name} for {reason}.', inline = True)
+    webhook.add_embed(embed)
+    await webhook.post()
     return f'{t} was banned.'
 
 @command(Privileges.Admin, hidden=True)
@@ -739,6 +758,13 @@ async def unban(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     reason = ' '.join(msg[2:]) if len_msg > 2 else None
 
     await t.unban(p, reason)
+    webhook_url = glob.config.webhooks['audit-log']
+    webhook = Webhook(url=webhook_url)
+    embed = Embed(title = f'')
+    embed.set_author(url = f"https://{glob.config.domain}/u/{p.id}", name = username, icon_url = f"https://a.{glob.config.domain}/{p.id}")
+    embed.add_field(name = 'New unbanned user', value = f'{t.name} has been unbanned by {p.name} for {reason}.', inline = True)
+    webhook.add_embed(embed)
+    await webhook.post()
     return f'{t} was unbanned.'
 
 @command(Privileges.Admin, hidden=True)

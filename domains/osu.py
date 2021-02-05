@@ -647,12 +647,20 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         if glob.datadog:
             glob.datadog.increment('gulag.submitted_scores_best')
 
+    # no hd multiplier
+    if "HD" in to_readable(int(s.mods)):
+        s.score = int(s.score // 1.02912621359)
+    
+    # RX to vanilla score:
+    if "RX" in to_readable(int(s.mods)):
+        s.score = int(s.score * 5.41284210526)
+
     s.id = await glob.db.execute(
         f'INSERT INTO {table} VALUES (NULL, '
         '%s, %s, %s, %s, %s, %s, '
         '%s, %s, %s, %s, %s, %s, '
         '%s, %s, %s, %s, '
-        '%s, %s, %s, %s, %s)', [
+        '%s, %s, %s, %s, %s, 2)', [
             s.bmap.md5, s.score, s.pp, s.acc, s.max_combo, int(s.mods),
             s.n300, s.n100, s.n50, s.nmiss, s.ngeki, s.nkatu,
             s.grade, int(s.status), s.mode.as_vanilla, s.play_time,
@@ -1089,7 +1097,14 @@ async def getScores(p: 'Player', conn: Connection) -> Optional[bytes]:
         glob.players.enqueue(packets.userStats(p))
 
     table = mode.sql_table
-    scoring = 'pp' if mode >= GameMode.rx_std else 'score'
+    if mode == GameMode.rx_std:
+        e = await glob.db.fetch(f'SELECT lb_pp FROM stats WHERE id = {p.id}')
+        if e['lb_pp'] == 1:
+            scoring = 'pp'
+        else:
+            scoring = 'score'
+    else:
+        scoring = 'score'
 
     if not (bmap := Beatmap.from_md5_cache(map_md5)):
         # if not found in memory, get from sql.
@@ -1172,6 +1187,7 @@ async def getScores(p: 'Player', conn: Connection) -> Optional[bytes]:
     ]
 
     params = [map_md5, conn.args['m']]
+
 
     if rank_type == RankingType.Mods:
         query.append('AND s.mods = %s')
