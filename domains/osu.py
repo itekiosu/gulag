@@ -647,24 +647,49 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         if glob.datadog:
             glob.datadog.increment('gulag.submitted_scores_best')
 
-    # no hd multiplier
-    if "HD" in to_readable(int(s.mods)):
-        s.score = int(s.score // 1.02912621359)
-    
-    # RX to vanilla score:
-    if "RX" in to_readable(int(s.mods)):
-        s.score = int(s.score * 5.41284210526)
+    smr = to_readable(int(s.mods))
 
-    # high bpm buff here when i can be bothered to grab bpm and stuff
-    
-    # high acc 3 mod buff but nerf low acc
-    if "NC" in to_readable(int(s.mods)):
+    if "DT" in smr:
         DTm = True
-    if "DT" in to_readable(int(s.mods)):
+    elif "NC" in smr:
         DTm = True
     else:
         DTm = False
 
+    # no hd multiplier
+    if "HD" in smr and "RX" not in smr:
+        s.score = int(s.score // 1.02912621359)
+    
+    # RX to vanilla score:
+    if "RX" in smr:
+        RXm = True
+    else:
+        RXm = False
+
+    multiplier = 1
+    if RXm:
+        if DTm:
+            multiplier = multiplier * 1.12
+        if "HR" in smr:
+            multiplier = multiplier * 1.06
+        if "HD" in smr:
+            multiplier = multiplier * 1.03
+        if "FL" in smr:
+            multiplier = multiplier * 1.12
+        if "SO" in smr:
+            multiplier = multiplier * 0.90
+        if "EZ" in smr:
+            multiplier = multiplier * 0.50
+        if "EZ" in smr:
+            multiplier = multiplier * 0.50
+        if "HT" in smr:
+            multiplier = multiplier * 0.30
+        s.score = int(s.score * multiplier)
+        s.score = int(s.score * 4.71873684211)
+
+    # high bpm buff here when i can be bothered to grab bpm and stuff
+    
+    # high acc 3 mod buff but nerf low acc
     if "RX" in to_readable(int(s.mods)) and DTm and "HR" in to_readable(int(s.mods)):
         if s.acc > 98.7:
             s.pp = int(s.pp * 1.03)
@@ -676,7 +701,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         '%s, %s, %s, %s, %s, %s, '
         '%s, %s, %s, %s, %s, %s, '
         '%s, %s, %s, %s, '
-        '%s, %s, %s, %s, %s, 2)', [
+        '%s, %s, %s, %s, %s, 3)', [
             s.bmap.md5, s.score, s.pp, s.acc, s.max_combo, int(s.mods),
             s.n300, s.n100, s.n50, s.nmiss, s.ngeki, s.nkatu,
             s.grade, int(s.status), s.mode.as_vanilla, s.play_time,
@@ -1194,7 +1219,7 @@ async def getScores(p: 'Player', conn: Connection) -> Optional[bytes]:
         f"SELECT s.id, s.{scoring} AS _score, "
         "s.max_combo, s.n50, s.n100, s.n300, "
         "s.nmiss, s.nkatu, s.ngeki, s.perfect, s.mods, "
-        "UNIX_TIMESTAMP(s.play_time) time, u.id userid, "
+        "s.play_time time, u.id userid, "
         "COALESCE(CONCAT('[', c.tag, '] ', u.name), u.name) AS name "
         f"FROM {table} s "
         "LEFT JOIN users u ON u.id = s.userid "
@@ -1238,7 +1263,7 @@ async def getScores(p: 'Player', conn: Connection) -> Optional[bytes]:
         f'SELECT id, {scoring} AS _score, '
         'max_combo, n50, n100, n300, '
         'nmiss, nkatu, ngeki, perfect, mods, '
-        'UNIX_TIMESTAMP(play_time) time '
+        'play_time time '
         f'FROM {table} '
         'WHERE map_md5 = %s AND mode = %s '
         'AND userid = %s AND status = 2 '

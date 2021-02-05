@@ -2,6 +2,7 @@
 
 from base64 import b64decode
 from datetime import datetime
+import time
 from enum import IntEnum
 from enum import unique
 from typing import Optional
@@ -291,7 +292,7 @@ class Score:
         s.mods = Mods(int(data[13]))
         s.passed = data[14] == 'True'
         s.mode = GameMode.from_params(int(data[15]), s.mods)
-        s.play_time = datetime.now()
+        s.play_time = round(time.time())
         s.client_flags = data[17].count(' ') # TODO: use osu!ver? (osuver\s+)
 
         s.grade = _grade if s.passed else 'F'
