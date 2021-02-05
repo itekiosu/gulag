@@ -655,6 +655,22 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
     if "RX" in to_readable(int(s.mods)):
         s.score = int(s.score * 5.41284210526)
 
+    # high bpm buff here when i can be bothered to grab bpm and stuff
+    
+    # high acc 3 mod buff but nerf low acc
+    if "NC" in to_readable(int(s.mods)):
+        DTm = True
+    if "DT" in to_readable(int(s.mods)):
+        DTm = True
+    else:
+        DTm = False
+
+    if "RX" in to_readable(int(s.mods)) and DTm and "HR" in to_readable(int(s.mods)):
+        if s.acc > 98.7:
+            s.pp = int(s.pp * 1.03)
+        if s.acc < 97.7:
+            s.pp = int(s.pp * 0.97)
+
     s.id = await glob.db.execute(
         f'INSERT INTO {table} VALUES (NULL, '
         '%s, %s, %s, %s, %s, %s, '
