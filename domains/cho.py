@@ -300,8 +300,9 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
                 return f'"{username}" not found.'
             reason = 'Cheat client found.'
             await t.ban(p, reason)
-        if osu_ver_year < 2021:
-            return (packets.versionUpdateForced() + packets.userID(-2)), 'no'
+        if int(r['ver']) < 20210125:
+            return (packets.versionUpdateForced() +
+                    packets.userID(-2)), 'no'
         if osu_ver < (dt.now() - td(60)):
             return (packets.versionUpdateForced() +
                     packets.userID(-2)), 'no'
