@@ -110,6 +110,17 @@ def command(priv: Privileges, aliases: list[str] = [],
 """
 
 @command(Privileges.Normal, hidden=True)
+async def _link(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
+    if not msg[0]:
+        return 'Please give a verification code!'
+    check = await glob.db.fetch(f'SELECT tag FROM discord WHERE code = "{msg[0]}"')
+    if not check:
+        return 'Please provide a valid verification code!'
+    
+    await glob.db.execute(f'UPDATE discord SET user = {p.id} WHERE code = "{msg[0]}"')
+    return f'Account linked to {check["tag"]}!'
+
+@command(Privileges.Normal, hidden=True)
 async def _lbpp(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     check = await glob.db.fetch(f'SELECT lb_pp FROM stats WHERE id = {p.id}')
     if check['lb_pp'] == 0:
