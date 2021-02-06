@@ -452,7 +452,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         await webhook.post()
 
     # set country
-    if glob.config.geo and not user_info['priv'] & Privileges.Staff:
+    if glob.config.geo and not user_info['priv'] & Privileges.Staff and not user_info['priv'] & Privileges.Nominator:
         info = ipinfo.getHandlerAsync(glob.config.access_token)
         details = await info.getDetails(ip)
         country = details.country.lower()

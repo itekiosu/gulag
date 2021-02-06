@@ -692,7 +692,7 @@ class Player:
         # the players location is stored for the ingame world map.
 
         # this is genuinely the worst thing i have ever made, desperate async friendly version needed soontm because this batters the fast login time
-        if self.priv & Privileges.Staff or self.priv & Privileges.Donator or self.priv & Privileges.Alumni:
+        if self.priv & Privileges.Staff or self.priv & Privileges.Donator or self.priv & Privileges.Alumni or self.priv & Privileges.Nominator:
             res = await glob.db.fetch(
                 'SELECT country AS c FROM users '
                 'WHERE id = %s',
