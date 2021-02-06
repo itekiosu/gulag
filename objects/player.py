@@ -384,7 +384,7 @@ class Player:
                 'Your account has been banned.\n\n'
                 'If you believe this was a mistake or '
                 'have waited >= 2 months, you can appeal '
-                'using the appeal form on the website.'
+                'by joining the Discord.'
             ))
 
         log(f'Banned {self}.', Ansi.CYAN)

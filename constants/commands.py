@@ -747,7 +747,7 @@ async def ban(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     webhook_url = glob.config.webhooks['audit-log']
     webhook = Webhook(url=webhook_url)
     embed = Embed(title = f'')
-    embed.set_author(url = f"https://{glob.config.domain}/u/{p.id}", name = username, icon_url = f"https://a.{glob.config.domain}/{p.id}")
+    embed.set_author(url = f"https://{glob.config.domain}/u/{p.id}", name = p.name, icon_url = f"https://a.{glob.config.domain}/{p.id}")
     embed.add_field(name = 'New banned user', value = f'{t.name} has been banned by {p.name} for {reason}.', inline = True)
     webhook.add_embed(embed)
     await webhook.post()
