@@ -347,7 +347,7 @@ async def osuSearchHandler(p: 'Player', conn: Connection) -> Optional[bytes]:
     if not conn.args['p'].isdecimal():
         return (400, b'')
 
-    url = f'{glob.config.mirror}/cheesegull/search'
+    url = f'{glob.config.mirror_dl}/api/search'
     params = {
         'amount': 100,
         'offset': conn.args['p'],
