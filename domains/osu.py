@@ -546,7 +546,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         return b'error: no' # not now though.
 
 
-    url = f'{glob.config.mirror}/cheesegull/b/{s.bmap.id}'
+    url = f'{glob.config.mirror}/b/{s.bmap.id}'
     async with glob.http.get(url) as resp:
         if not resp or resp.status != 200:
             return b'Failed to retrieve data from mirror!'
@@ -656,37 +656,6 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
     else:
         DTm = False
 
-    # no hd multiplier
-    if "HD" in smr and "RX" not in smr:
-        s.score = int(s.score // 1.02912621359)
-    
-    # RX to vanilla score:
-    if "RX" in smr:
-        RXm = True
-    else:
-        RXm = False
-
-    multiplier = 1
-    if RXm:
-        if DTm:
-            multiplier = multiplier * 1.12
-        if "HR" in smr:
-            multiplier = multiplier * 1.06
-        if "HD" in smr:
-            multiplier = multiplier * 1.03
-        if "FL" in smr:
-            multiplier = multiplier * 1.12
-        if "SO" in smr:
-            multiplier = multiplier * 0.90
-        if "EZ" in smr:
-            multiplier = multiplier * 0.50
-        if "EZ" in smr:
-            multiplier = multiplier * 0.50
-        if "HT" in smr:
-            multiplier = multiplier * 0.30
-        s.score = int(s.score * multiplier)
-        s.score = int(s.score * 4.71873684211)
-
     # high bpm buff here when i can be bothered to grab bpm and stuff
     
     # high acc 3 mod buff but nerf low acc
@@ -701,7 +670,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         '%s, %s, %s, %s, %s, %s, '
         '%s, %s, %s, %s, %s, %s, '
         '%s, %s, %s, %s, '
-        '%s, %s, %s, %s, %s, 3)', [
+        '%s, %s, %s, %s, %s)', [
             s.bmap.md5, s.score, s.pp, s.acc, s.max_combo, int(s.mods),
             s.n300, s.n100, s.n50, s.nmiss, s.ngeki, s.nkatu,
             s.grade, int(s.status), s.mode.as_vanilla, s.play_time,
@@ -945,7 +914,7 @@ async def getReplay(p: 'Player', conn: Connection) -> Optional[bytes]:
         replay_file = REPLAYS_PATH_AP / f'{conn.args["c"]}.osr'
 
     if replay_file.exists():
-        return replay_file.read_bytes
+        return replay_file.read_bytes()
 
 # XXX: going to be slightly more annoying than expected to set this up :P
 #@domain.route('/web/osu-session.php', methods=['POST'])
@@ -1138,7 +1107,7 @@ async def getScores(p: 'Player', conn: Connection) -> Optional[bytes]:
         glob.players.enqueue(packets.userStats(p))
 
     table = mode.sql_table
-    if mode == GameMode.rx_std:
+    if mode in (GameMode.rx_std, GameMode.ap_std):
         e = await glob.db.fetch(f'SELECT lb_pp FROM stats WHERE id = {p.id}')
         if e['lb_pp'] == 1:
             scoring = 'pp'

@@ -130,7 +130,7 @@ async def _lbpp(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         on = 0
         thing = 'score'
     await glob.db.execute(f'UPDATE stats SET lb_pp = {on} WHERE id = {p.id}')
-    return f'Relax leaderboards set to {thing}!'
+    return f'Relax/Autopilot leaderboards set to {thing}!'
 
 @command(Privileges.Normal, aliases=['h'], hidden=True)
 async def _help(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
