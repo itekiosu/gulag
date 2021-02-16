@@ -567,11 +567,11 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         await s.player.ban(glob.bot, f'[{s.mode!r}] autoban for timewarp')
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
-        embed = Embed(title = f'New user')
-        embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"http://a.{glob.config.domain}/{user_info['id']}")
+        embed = Embed(title = f'New banned user')
+        embed.set_author(url = f"https://{glob.config.domain}/u/{s.player.id}", name = s.player.name, icon_url = f"http://a.{glob.config.domain}/{s.player.id}")
         thumb_url = f'http://a.{glob.config.domain}/1'
         embed.set_thumbnail(url=thumb_url)
-        embed.add_field(name = 'Anticheat', value = f'{username} for using timewarp.', inline = True)
+        embed.add_field(name = 'Anticheat', value = f'{s.player.name} for using timewarp.', inline = True)
         webhook.add_embed(embed)
         await webhook.post()
         return b'error: ban'
