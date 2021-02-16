@@ -566,7 +566,22 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
     elif "HT" in to_readable(int(s.mods)):
         length = length // 0.75
 
-    if bl and int(length) != (int(mp_args['st'])//1000) and mp_args['ft'] == 0 and not mp_args['x']:
+    if not mp_args['st']:
+        #hq or some other ancient cheat lol
+        log(f'{s.player} banned for attempting to submit a cheated score on gm {s.mode!r}.', Ansi.LRED)
+        await s.player.ban(glob.bot, f'[{s.mode!r}] autoban for missing st arg')
+        webhook_url = glob.config.webhooks['audit-log']
+        webhook = Webhook(url=webhook_url)
+        embed = Embed(title = f'New banned user')
+        embed.set_author(url = f"https://{glob.config.domain}/u/{s.player.id}", name = s.player.name, icon_url = f"http://a.{glob.config.domain}/{s.player.id}")
+        thumb_url = f'http://a.{glob.config.domain}/1'
+        embed.set_thumbnail(url=thumb_url)
+        embed.add_field(name = 'Anticheat', value = f'{s.player.name} for using missing st arg.', inline = True)
+        webhook.add_embed(embed)
+        await webhook.post()
+        return b'error: ban'
+
+    if bl and int(length) != (int(mp_args['st'])//1000) and s.passed:
         # timewarp!!
         log(f'{s.player} banned for submitting a score with timewarp on gm {s.mode!r}.', Ansi.LRED)
         await s.player.ban(glob.bot, f'[{s.mode!r}] autoban for timewarp')
