@@ -26,6 +26,7 @@ from cmyui import Connection
 from cmyui import Domain
 from cmyui import log
 from cmyui import rstring
+from cmyui.discord import Webhook, Embed
 
 import packets
 from constants import regexes
@@ -550,12 +551,15 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         url = f'{glob.config.mirror}/b/{s.bmap.id}'
         async with glob.http.get(url) as resp:
             if not resp or resp.status != 200:
-                return b'Failed to retrieve data from mirror!'
-
-            result = await resp.json()
-
-        length = result['TotalLength']
-        bl = True
+                log('Failed to retrieve data from mirror!', Ansi.LRED)
+                bl = False
+            else:
+                try:
+                    result = await resp.json()
+                    length = result['TotalLength']
+                    bl = True
+                except:
+                    bl = False
     except:
         bl = False
 
@@ -565,6 +569,9 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         length = length // 1.5
     elif "HT" in to_readable(int(s.mods)):
         length = length // 0.75
+
+    # average leniency for user to not get banned falsely on every score submission lol
+    length = length + 5
 
     if not mp_args['st']:
         #hq or some other ancient cheat lol
@@ -581,20 +588,21 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         await webhook.post()
         return b'error: ban'
 
-    if bl and int(length) != (int(mp_args['st'])//1000) and s.passed:
-        # timewarp!!
-        log(f'{s.player} banned for submitting a score with timewarp on gm {s.mode!r}.', Ansi.LRED)
-        await s.player.ban(glob.bot, f'[{s.mode!r}] autoban for timewarp')
-        webhook_url = glob.config.webhooks['audit-log']
-        webhook = Webhook(url=webhook_url)
-        embed = Embed(title = f'New banned user')
-        embed.set_author(url = f"https://{glob.config.domain}/u/{s.player.id}", name = s.player.name, icon_url = f"http://a.{glob.config.domain}/{s.player.id}")
-        thumb_url = f'http://a.{glob.config.domain}/1'
-        embed.set_thumbnail(url=thumb_url)
-        embed.add_field(name = 'Anticheat', value = f'{s.player.name} for using timewarp.', inline = True)
-        webhook.add_embed(embed)
-        await webhook.post()
-        return b'error: ban'
+    if bl:
+        if int(length) < (int(mp_args['st'])//1000) and s.passed:
+            log(f'Beatmap mirror length: {length} vs player length {(int(mp_args["st"])//1000)} (Potential timewarp user: {s.player})', Ansi.LRED)
+            log(f'{s.player} banned for submitting a score with timewarp on gm {s.mode!r}.', Ansi.LRED)
+            #await s.player.ban(glob.bot, f'[{s.mode!r}] autoban for timewarp')
+            webhook_url = glob.config.webhooks['audit-log']
+            webhook = Webhook(url=webhook_url)
+            embed = Embed(title = f'New flagged user')
+            embed.set_author(url = f"https://{glob.config.domain}/u/{s.player.id}", name = s.player.name, icon_url = f"http://a.{glob.config.domain}/{s.player.id}")
+            thumb_url = f'http://a.{glob.config.domain}/1'
+            embed.set_thumbnail(url=thumb_url)
+            embed.add_field(name = 'Anticheat', value = f'{s.player.name} for potential timewarp (Beatmap mirror length {length} vs player length {(int(mp_args["st"])//1000)}).', inline = True)
+            webhook.add_embed(embed)
+            await webhook.post()
+            #return b'error: ban'
 
     # we should update their activity no matter
     # what the result of the score submission is.
