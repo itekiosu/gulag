@@ -20,6 +20,9 @@ max_conns = 16
 # console, generally for debugging purposes.
 debug = False
 
+# timewarp detection however its currently very buggy/unstable and i would recommend only enabling it for testing on your own and definitely DO NOT use it for production
+anticheat = False
+
 # whether the server is running in 'production mode'.
 # having this as false will disable some features that
 # aren't used during testing.

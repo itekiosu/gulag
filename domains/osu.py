@@ -563,16 +563,6 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
     except:
         bl = False
 
-    if "DT" in to_readable(int(s.mods)):
-        length = length // 1.5
-    elif "NC" in to_readable(int(s.mods)):
-        length = length // 1.5
-    elif "HT" in to_readable(int(s.mods)):
-        length = length // 0.75
-
-    # average leniency for user to not get banned falsely on every score submission lol
-    length = length + 5
-
     if not mp_args['st']:
         #hq or some other ancient cheat lol
         log(f'{s.player} banned for attempting to submit a cheated score on gm {s.mode!r}.', Ansi.LRED)
@@ -588,7 +578,17 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         await webhook.post()
         return b'error: ban'
 
-    if bl:
+    if bl and glob.config.anticheat:
+        if "DT" in to_readable(int(s.mods)):
+            length = length // 1.5
+        elif "NC" in to_readable(int(s.mods)):
+            length = length // 1.5
+        elif "HT" in to_readable(int(s.mods)):
+            length = length // 0.75
+
+        # average leniency for user to not get banned falsely on every score submission lol
+        length = length + 5
+
         if int(length) < (int(mp_args['st'])//1000) and s.passed:
             log(f'Beatmap mirror length: {length} vs player length {(int(mp_args["st"])//1000)} (Potential timewarp user: {s.player})', Ansi.LRED)
             log(f'{s.player} banned for submitting a score with timewarp on gm {s.mode!r}.', Ansi.LRED)
