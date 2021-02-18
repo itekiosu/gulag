@@ -676,7 +676,7 @@ class SendPrivateMessage(BanchoPacket, type=Packets.OSU_SEND_PRIVATE_MESSAGE):
 
         if t.status.action == Action.Afk and t.away_msg:
             # send away message if target is afk and has one set.
-            await p.send(p.name, t.away_msg)
+            await p.send(t, t.away_msg)
 
         if t is glob.bot:
             # may have a command in the message.
