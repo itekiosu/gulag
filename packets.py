@@ -638,24 +638,33 @@ def changeUsername(old: str, new: str) -> bytes:
         (f'{old}>>>>{new}', osuTypes.string)
     )
 
+@cache
+def botStats():
+    # pick at random from list of potential statuses.
+    status_id = 6
+    status_txt = 'over Iteki...'
+
+    return write(
+        Packets.CHO_USER_STATS,
+        (glob.bot.id, osuTypes.i32), # id
+        (status_id, osuTypes.u8), # action
+        (status_txt, osuTypes.string), # info_text
+        ('', osuTypes.string), # map_md5
+        (0, osuTypes.i32), # mods
+        (0, osuTypes.u8), # mode
+        (0, osuTypes.i32), # map_id
+        (0, osuTypes.i64), # rscore
+        (0.0, osuTypes.f32), # acc
+        (0, osuTypes.i32), # plays
+        (0, osuTypes.i64), # tscore
+        (0, osuTypes.i32), # rank
+        (0, osuTypes.i16) # pp
+    )
+
 # packet id: 11
 def userStats(p: 'Player') -> bytes:
     if p is glob.bot:
-        return write(
-            (glob.bot.id, osuTypes.i32), # id
-            (6, osuTypes.u8), # action
-            ('over Iteki...', osuTypes.string), # info_text
-            ('', osuTypes.string), # map_md5
-            (0, osuTypes.i32), # mods
-            (0, osuTypes.u8), # mode
-            (0, osuTypes.i32), # map_id
-            (0, osuTypes.i64), # rscore
-            (0.0, osuTypes.f32), # acc
-            (0, osuTypes.i32), # plays
-            (0, osuTypes.i64), # tscore
-            (0, osuTypes.i32), # rank
-            (0, osuTypes.i16) # pp
-        )
+        return botStats()
 
     gm_stats = p.gm_stats
     if gm_stats.pp > 0x7fff:
