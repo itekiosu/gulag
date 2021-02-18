@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from typing import Union
 
 from cmyui import log
+import asyncio
 
 from constants.privileges import Privileges
 from objects import glob
@@ -105,9 +106,10 @@ class MatchList(list):
 
 class PlayerList:
     """The currently active players on the server."""
-    __slots__ = ('players',)
+    __slots__ = ('players', '_lock')
 
     def __init__(self):
+        self._lock = asyncio.Lock()
         self.players = []
 
     def __getitem__(self, index: Union[int, slice]) -> Player:
