@@ -538,7 +538,7 @@ def write_match(m: Match, send_pw: bool = True) -> bytearray:
     ret += passwd
 
     ret += write_string(m.map_name)
-    ret += m.map_id.to_bytes(4, 'little', signed=True)
+    ret += (m.map_id).to_bytes(4, 'little', signed=True)
     ret += write_string(m.map_md5)
 
     ret.extend([s.status for s in m.slots])
@@ -546,17 +546,17 @@ def write_match(m: Match, send_pw: bool = True) -> bytearray:
 
     for s in m.slots:
         if s.status & SlotStatus.has_player:
-            ret += s.player.id.to_bytes(4, 'little')
+            ret += (s.player.id).to_bytes(4, 'little')
 
-    ret += m.host.id.to_bytes(4, 'little')
+    ret += (m.host.id).to_bytes(4, 'little')
     ret.extend((m.mode, m.win_condition,
                 m.team_type, m.freemods))
 
     if m.freemods:
         for s in m.slots:
-            ret += s.mods.to_bytes(4, 'little')
+            ret += (s.mods).to_bytes(4, 'little')
 
-    ret += m.seed.to_bytes(4, 'little')
+    ret += (m.seed).to_bytes(4, 'little')
     return ret
 
 def write_scoreframe(s: ScoreFrame) -> bytearray:
@@ -641,13 +641,20 @@ def changeUsername(old: str, new: str) -> bytes:
 # packet id: 11
 def userStats(p: 'Player') -> bytes:
     if p is glob.bot:
-        return ( # bot is const, no reason to call write()
-            b'\x0b\x00\x00=\x00\x00\x00\x01\x00\x00'
-            b'\x00\x08\x0b\x0eout new code..\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x80?'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        return write(
+            (glob.bot.id, osuTypes.i32), # id
+            (6, osuTypes.u8), # action
+            ('over Iteki...', osuTypes.string), # info_text
+            ('', osuTypes.string), # map_md5
+            (0, osuTypes.i32), # mods
+            (0, osuTypes.u8), # mode
+            (0, osuTypes.i32), # map_id
+            (0, osuTypes.i64), # rscore
+            (0.0, osuTypes.f32), # acc
+            (0, osuTypes.i32), # plays
+            (0, osuTypes.i64), # tscore
+            (0, osuTypes.i32), # rank
+            (0, osuTypes.i16) # pp
         )
 
     gm_stats = p.gm_stats

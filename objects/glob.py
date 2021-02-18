@@ -4,11 +4,12 @@ from asyncio import Queue
 from typing import Optional, TYPE_CHECKING
 
 import config # imported for indirect use
-from objects.collections import *
 
 if TYPE_CHECKING:
     from aiohttp.client import ClientSession
+    from objects.achievement import Achievement
     from cmyui import AsyncSQLPool, Version
+    from objects.collections import *
     from objects.player import Player
     from objects.score import Score
     from datadog import ThreadStats
@@ -19,11 +20,11 @@ __all__ = ('players', 'channels', 'matches',
            'db', 'http', 'version', 'bot',
            'cache', 'sketchy_queue', 'datadog')
 
-players = PlayerList()
-channels = ChannelList()
-matches = MatchList()
-pools = MapPoolList()
-clans = ClanList()
+players: 'PlayerList'
+channels: 'ChannelList'
+matches: 'MatchList'
+pools: 'MapPoolList'
+clans: 'ClanList'
 
 # store achievements per-gamemode (vn only)
 achievements = {0: [], 1: [],
@@ -45,6 +46,7 @@ version: 'Version'
 bot: 'Player'
 sketchy_queue: Queue['Score']
 datadog: Optional['ThreadStats']
+achievements: dict[int, list['Achievement']]
 
 # gulag's main cache.
 # the idea here is simple - keep a copy of things either from sql or

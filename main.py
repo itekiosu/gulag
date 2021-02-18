@@ -27,6 +27,7 @@ from objects.channel import Channel
 from objects.clan import Clan
 from objects.match import MapPool
 from objects.player import Player
+from objects.collections import *
 from utils.misc import get_press_times
 from utils.updater import Updater
 
@@ -36,78 +37,103 @@ if TYPE_CHECKING:
 __all__ = ()
 
 # current version of gulag
-glob.version = cmyui.Version(3, 2, 7)
+glob.version = cmyui.Version(3, 2, 8)
 
-async def on_start() -> None:
-    glob.http = aiohttp.ClientSession(json_serialize=orjson.dumps)
-
-    # connect to mysql
-    glob.db = cmyui.AsyncSQLPool()
-    await glob.db.connect(glob.config.mysql)
-
-    # run the sql updater
-    updater = Updater(glob.version)
-    await updater.run()
-    await updater.log_startup()
-
+async def setup_collections() -> None:
+    """Setup & cache many global collections (mostly from sql)."""
     # create our bot & append it to the global player list.
-    glob.bot = Player(id=1, name='Ruji', priv=Privileges.Normal)
-    glob.bot.last_recv_time = float(0x7fffffff)
+    res = await glob.db.fetch('SELECT name FROM users WHERE id = 1')
 
+    # global players list
+    glob.players = PlayerList()
+
+    glob.bot = Player(
+        id = 1, name = res['name'], priv = Privileges.Normal,
+        last_recv_time = float(0x7fffffff) # never auto-dc
+    )
     glob.players.append(glob.bot)
 
-    # TODO: this section is getting a bit gross.. :P
-    # should be moved and probably refactored pretty hard.
-
-    # add all channels from db.
+    # global channels list
+    glob.channels = ChannelList()
     async for res in glob.db.iterall('SELECT * FROM channels'):
-        glob.channels.append(Channel(
+        chan = Channel(
             name = res['name'],
             topic = res['topic'],
             read_priv = Privileges(res['read_priv']),
             write_priv = Privileges(res['write_priv']),
             auto_join = res['auto_join'] == 1
-        ))
-
-    # add all mappools from db.
-    async for res in glob.db.iterall('SELECT * FROM tourney_pools'):
-        created_by = await glob.players.get(id=res['created_by'], sql=True)
-        pool = MapPool(
-            id = res['id'],
-            name = res['name'],
-            created_at = res['created_at'],
-            created_by = created_by
         )
 
-        await pool.maps_from_sql()
-        glob.pools.append(pool)
+        glob.channels.append(chan)
 
-    # add all clans from db.
+    # global matches list
+    glob.matches = MatchList()
+
+    # global clans list
+    glob.clans = ClanList()
     async for res in glob.db.iterall('SELECT * FROM clans'):
         clan = Clan(**res)
 
         await clan.members_from_sql()
         glob.clans.append(clan)
 
-    # add all achievements from db.
+    # global mappools list
+    glob.pools = MapPoolList()
+    async for res in glob.db.iterall('SELECT * FROM tourney_pools'):
+        pool = MapPool(
+            id = res['id'],
+            name = res['name'],
+            created_at = res['created_at'],
+            created_by = await glob.players.get_ensure(id=res['created_by'])
+        )
+
+        await pool.maps_from_sql()
+        glob.pools.append(pool)
+
+    # global achievements (sorted by vn gamemodes)
+    glob.achievements = {0: [], 1: [], 2: [], 3: []}
     async for res in glob.db.iterall('SELECT * FROM achievements'):
         # NOTE: achievement conditions are stored as
-        # stringified python expressions in the database.
+        # stringified python expressions in the database
+        # to allow for easy custom achievements.
         condition = eval(f'lambda score: {res.pop("cond")}')
         achievement = Achievement(**res, cond=condition)
+
+        # NOTE: achievements are grouped by modes internally.
         glob.achievements[res['mode']].append(achievement)
 
-    """ bmsubmit stuff
+    """ XXX: Unfinished code for beatmap submission.
     # get the latest set & map id offsets for custom maps.
     maps_res = await glob.db.fetch(
         'SELECT id, set_id FROM maps '
         'WHERE server = "gulag" '
         'ORDER BY id ASC LIMIT 1'
     )
-
     if maps_res:
         glob.gulag_maps = maps_res
     """
+
+
+async def before_serving() -> None:
+    """Called before the server begins serving connections."""
+    # retrieve a client session to use for http connections.
+    glob.http = aiohttp.ClientSession(json_serialize=orjson.dumps)
+
+    # retrieve a pool of connections to use for mysql interaction.
+    glob.db = cmyui.AsyncSQLPool()
+    await glob.db.connect(glob.config.mysql)
+
+    # run the sql & submodule updater (uses http & db).
+    updater = Updater(glob.version)
+    await updater.run()
+    await updater.log_startup()
+
+    # cache many global collections/objects from sql,
+    # such as channels, mappools, clans, bot, etc.
+    await setup_collections()
+
+    # setup a loop to kick inactive ghosted players.
+    loop = asyncio.get_running_loop()
 
     # add new donation ranks & enqueue tasks to remove current ones.
     # TODO: this system can get quite a bit better; rather than just
@@ -271,12 +297,14 @@ if __name__ == '__main__':
     from domains.osu import domain as osu_domain # osu.ppy.sh
     from domains.ava import domain as ava_domain # a.ppy.sh
     app.add_domains({cho_domain, osu_domain, ava_domain})
-    app.add_tasks({on_start(), disconnect_inactive()})
+    app.add_tasks({disconnect_inactive()})
 
     # if surveillance webhook is enabled,
     # run our auto-detection 'thread' in bg.
     if glob.config.webhooks['surveillance']:
         app.add_task(run_detections())
+
+    app.before_serving = before_serving
 
     # support for https://datadoghq.com
     if all(glob.config.datadog.values()):
