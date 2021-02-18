@@ -328,8 +328,12 @@ async def _deny(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     artist = e['artist']
     title = e['title']
     embed = f"[https://osu.ppy.sh/{typem}/{request['map']} {artist} - {title} {diff}]"
-    u = await glob.players.get(name=requester)
-    await u.send(glob.bot, f"Your request to {request['status']} {embed} was denied. The map's status has been unchanged.")
+    msg = f"Your request to {request['status']} {embed} was denied. The map's status has been unchanged."
+    if (u := await glob.players.get(name=requester)):
+        await u.send(glob.bot, msg)
+    else:
+        log('Requester offline, preparing message for next login.')
+        await glob.db.execute(f"INSERT INTO `mail` (`from_id`, `to_id`, `msg`, `time`) VALUES (1, {request['id']}, {msg}, UNIX_TIMESTAMP())")
     await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
     return 'Request denied!'
 
@@ -368,6 +372,7 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     else:
         ns = 'unranked'
     nsr = status_to_id(msg[1])
+    msg = f'Your request to {request["status"]} {embed} was approved. The map is now {ns}!'
     if request["type"] == 'set':
         # update whole set
         await glob.db.execute(
@@ -381,8 +386,11 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
             if cached['map'].set_id == request['map']:
                 cached['map'].status = RankedStatus(nsr)
 
-        u = await glob.players.get(name=requester)
-        await u.send(glob.bot, f"Your request to {request['status']} {embed} was approved. The map is now {ns}!")
+        if (u := await glob.players.get(name=requester)):
+            await u.send(glob.bot, msg)
+        else:
+            log('Requester offline, preparing message for next login.')
+            await glob.db.execute(f'INSERT INTO `mail` (`from_id`, `to_id`, `msg`, `time`) VALUES (1, {request["id"]}, {msg}, UNIX_TIMESTAMP())')
         await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
         return f'Request accepted! It is now {ns}'
     else:
@@ -393,8 +401,11 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
             [nsr, request['map']]
         )
 
-        u = await glob.players.get(name=requester)
-        await u.send(glob.bot, f"Your request to {request['status']} {embed} was approved. The map is now {ns}!")
+        if (u := await glob.players.get(name=requester)):
+            await u.send(glob.bot, msg)
+        else:
+            log('Requester offline, preparing message for next login.')
+            await glob.db.execute(f'INSERT INTO `mail` (`from_id`, `to_id`, `msg`, `time`) VALUES (1, {request["id"]}, {msg}, UNIX_TIMESTAMP())')
 
         for cached in glob.cache['beatmap'].values():
             # not going to bother checking timeout
