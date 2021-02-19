@@ -648,7 +648,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         # Get the PP cap for the current context.
         pp_cap = autoban_pp[s.mode][s.mods & Mods.FLASHLIGHT != 0]
 
-        if s.pp > pp_cap:
+        if s.pp > pp_cap and s.bmap.status == RankedStatus.Ranked and s.passed:
             log(f'{s.player} banned for submitting '
                 f'{s.pp:.2f} score on gm {s.mode!r}.',
                 Ansi.LRED)
