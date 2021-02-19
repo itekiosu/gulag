@@ -653,15 +653,15 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
                 f'{s.pp:.2f} score on gm {s.mode!r}.',
                 Ansi.LRED)
 
-            await s.player.ban(glob.bot, f'[{s.mode!r}] autoban @ {s.pp:.2f}')
+            #await s.player.ban(glob.bot, f'[{s.mode!r}] autoban @ {s.pp:.2f}')
             webhook_url = glob.config.webhooks['audit-log']
             webhook = Webhook(url=webhook_url)
             embed = Embed(title = f'')
             embed.set_author(url = f"https://iteki.pw/u/1", name = 'Anticheat', icon_url = f"https://a.iteki.pw/1")
-            embed.add_field(name = 'New banned user', value = f'{s.player} has been banned for [{s.mode!r}] autoban @ {s.pp:.2f}.', inline = True)
+            embed.add_field(name = 'New flagged user', value = f'{s.player} has been flagged for [{s.mode!r}] autoflag @ {s.pp:.2f}pp.', inline = True)
             webhook.add_embed(embed)
             await webhook.post()
-            return b'error: ban'
+            #return b'error: ban'
 
     """ Score submission checks completed; submit the score. """
 
