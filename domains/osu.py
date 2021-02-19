@@ -644,25 +644,6 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
     if 'i' in conn.files:
         point_of_interest()
 
-    if not s.player.priv & Privileges.Whitelisted:
-        # Get the PP cap for the current context.
-        pp_cap = autoban_pp[s.mode][s.mods & Mods.FLASHLIGHT != 0]
-
-        if s.pp > pp_cap and s.bmap.status == RankedStatus.Ranked and s.passed:
-            log(f'{s.player} banned for submitting '
-                f'{s.pp:.2f} score on gm {s.mode!r}.',
-                Ansi.LRED)
-
-            #await s.player.ban(glob.bot, f'[{s.mode!r}] autoban @ {s.pp:.2f}')
-            webhook_url = glob.config.webhooks['audit-log']
-            webhook = Webhook(url=webhook_url)
-            embed = Embed(title = f'')
-            embed.set_author(url = f"https://iteki.pw/u/1", name = 'Anticheat', icon_url = f"https://a.iteki.pw/1")
-            embed.add_field(name = 'New flagged user', value = f'{s.player} has been flagged for [{s.mode!r}] autoflag @ {s.pp:.2f}pp.', inline = True)
-            webhook.add_embed(embed)
-            await webhook.post()
-            #return b'error: ban'
-
     """ Score submission checks completed; submit the score. """
 
     if glob.datadog:
@@ -696,9 +677,31 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
     # high acc 3 mod buff but nerf low acc
     if "RX" in to_readable(int(s.mods)) and DTm and "HR" in to_readable(int(s.mods)):
         if s.acc > 98.7:
-            s.pp = int(s.pp * 1.03)
+            s.pp = float(s.pp * 1.03)
         if s.acc < 97.7:
-            s.pp = int(s.pp * 0.97)
+            s.pp = float(s.pp * 0.97)
+
+    # what the fuck are you making me do oppai
+    s.pp = float(f"{float(str(s.pp).replace('+', '').replace('e', '')):.3f}")
+
+    if not s.player.priv & Privileges.Whitelisted:
+        # Get the PP cap for the current context.
+        pp_cap = autoban_pp[s.mode][s.mods & Mods.FLASHLIGHT != 0]
+
+        if s.pp > pp_cap and s.bmap.status == RankedStatus.Ranked and s.passed:
+            log(f'{s.player} banned for submitting '
+                f'{s.pp:.2f} score on gm {s.mode!r}.',
+                Ansi.LRED)
+
+            #await s.player.ban(glob.bot, f'[{s.mode!r}] autoban @ {s.pp:.2f}')
+            webhook_url = glob.config.webhooks['audit-log']
+            webhook = Webhook(url=webhook_url)
+            embed = Embed(title = f'')
+            embed.set_author(url = f"https://iteki.pw/u/1", name = 'Anticheat', icon_url = f"https://a.iteki.pw/1")
+            embed.add_field(name = 'New flagged user', value = f'{s.player} has been flagged for [{s.mode!r}] autoflag @ {s.pp:.2f}pp.', inline = True)
+            webhook.add_embed(embed)
+            await webhook.post()
+            #return b'error: ban'
 
     s.id = await glob.db.execute(
         f'INSERT INTO {table} VALUES (NULL, '
