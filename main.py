@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 __all__ = ()
 
 # current version of gulag
-glob.version = cmyui.Version(3, 2, 9)
+glob.version = cmyui.Version(3, 3, 0)
 
 async def setup_collections() -> None:
     """Setup & cache many global collections (mostly from sql)."""

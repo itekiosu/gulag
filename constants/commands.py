@@ -765,6 +765,54 @@ async def ban(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     return f'{t} was banned.'
 
 @command(Privileges.Admin, hidden=True)
+async def freeze(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
+    """Freeze a specified player's account, with a reason."""
+    if len(msg) < 2:
+        return 'Invalid syntax: !freeze <name> <reason>'
+
+    # find any user matching (including offline).
+    if not (t := await glob.players.get(name=msg[0], sql=True)):
+        return f'"{msg[0]}" not found.'
+
+    if t.priv & Privileges.Staff and not p.priv & Privileges.Dangerous:
+        return 'Only developers can manage staff members.'
+
+    reason = ' '.join(msg[1:])
+
+    await t.freeze(p, reason)
+    webhook_url = glob.config.webhooks['audit-log']
+    webhook = Webhook(url=webhook_url)
+    embed = Embed(title = f'')
+    embed.set_author(url = f"https://{glob.config.domain}/u/{p.id}", name = p.name, icon_url = f"https://a.{glob.config.domain}/{p.id}")
+    embed.add_field(name = 'New frozen user', value = f'{t.name} has been frozen by {p.name} for {reason}.', inline = True)
+    webhook.add_embed(embed)
+    await webhook.post()
+    return f'{t} was frozen.'
+
+@command(Privileges.Admin, hidden=True)
+async def unfreeze(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
+    """Unfreeze a specified player's account"""
+    if len(msg) < 1:
+        return 'Invalid syntax: !unfreeze <name>'
+
+    # find any user matching (including offline).
+    if not (t := await glob.players.get(name=msg[0], sql=True)):
+        return f'"{msg[0]}" not found.'
+
+    if t.priv & Privileges.Staff and not p.priv & Privileges.Dangerous:
+        return 'Only developers can manage staff members.'
+
+    await t.unfreeze(p, reason)
+    webhook_url = glob.config.webhooks['audit-log']
+    webhook = Webhook(url=webhook_url)
+    embed = Embed(title = f'')
+    embed.set_author(url = f"https://{glob.config.domain}/u/{p.id}", name = p.name, icon_url = f"https://a.{glob.config.domain}/{p.id}")
+    embed.add_field(name = 'New unfrozen user', value = f'{t.name} has been frozen by {p.name}.', inline = True)
+    webhook.add_embed(embed)
+    await webhook.post()
+    return f'{t} was unfrozen.'
+
+@command(Privileges.Admin, hidden=True)
 async def unban(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     """Unban a specified player's account, with a reason."""
     if (len_msg := len(msg)) < 2:

@@ -5,7 +5,7 @@ import random
 import time
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, date, timedelta, timezone
 from enum import IntEnum
 from enum import unique
 from functools import partial
@@ -389,6 +389,43 @@ class Player:
             ))
 
         log(f'Banned {self}.', Ansi.CYAN)
+
+    async def freeze(self, admin: 'Player', reason: str) -> None:
+        log_msg = f'{admin} froze for {reason}'
+        await glob.db.execute(
+            'INSERT INTO logs (`from`, `to`, `msg`, `time`) '
+            'VALUES (%s, %s, %s, NOW())',
+            [admin.id, self.id, log_msg]
+        )
+
+        await glob.db.execute(f'UPDATE users SET frozen = 1 WHERE id = {self.id}')
+        freezedate = datetime.now() + timedelta(7)
+        timer = freezedate.timestamp()
+        await glob.db.execute(f'UPDATE users SET freezetime = {timer} WHERE id = {self.id}')
+
+        if self in glob.players:
+            self.enqueue(packets.notification(
+                f'Your account has been frozen by {admin.name} for reason {reason}\n\n'
+                'This means you have 7 days to create a valid liveplay to avoid a ban.\n'
+                'Please message tsunyoku#8551 on Discord (If you need to join the Iteki discord: https://iteki.pw/discord) to be given the liveplay criteria you will be expected to meet.\n\n'
+                'Once a valid liveplay is provided, your account will be unfrozen!'
+            ))
+
+    async def unfreeze(self, admin: 'Player', reason: str) -> None:
+        log_msg = f'{admin} unfroze'
+        await glob.db.execute(
+            'INSERT INTO logs (`from`, `to`, `msg`, `time`) '
+            'VALUES (%s, %s, %s, NOW())',
+            [admin.id, self.id, log_msg]
+        )
+
+        await glob.db.execute(f'UPDATE users SET frozen = 0 WHERE id = {self.id}')
+        await glob.db.execute(f'UPDATE users SET freezetime = 0 WHERE id = {self.id}')
+
+        if self in glob.players:
+            self.enqueue(packets.notification(
+                'Your account has been unfrozen. Thank you for co-operating!'
+            ))
 
     async def unban(self, admin: 'Player', reason: str) -> None:
         """Unban `self` for `reason`, and log to sql."""

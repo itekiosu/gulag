@@ -285,7 +285,6 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
 
     # quite a bit faster
     # than using strptime
-    osu_ver_year = int(r['ver'][0:4])
     osu_ver = dt(
         year = int(r['ver'][0:4]),
         month = int(r['ver'][4:6]),
@@ -335,7 +334,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
 
     user_info = await glob.db.fetch(
         'SELECT id, name, priv, pw_bcrypt, '
-        'silence_end, clan_id, clan_rank '
+        'silence_end, clan_id, clan_rank, frozen, freezetime '
         'FROM users WHERE safe_name = %s',
         [make_safe_name(username)]
     )
@@ -486,6 +485,32 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
                                     f'Current build: {glob.version}')
     else:
         data += packets.notification('Welcome to Iteki!\nIf you need any help please join our Discord (https://iteki.pw/discord) and use !help to see all available commands.\n\nEnjoy!')
+
+    if int(user_info['frozen']) == 1:
+        if dt.now().timestamp() > user_info['freezetime']:
+            # user still frozen and their timer has passed
+            if not (t := await glob.players.get(name=username, sql=True)):
+                return f'"{username}" not found.'
+            reason = 'Freeze timer passed.'
+            await t.ban(p, reason)
+            await glob.db.execute(f'UPDATE users SET frozen = 0 WHERE id = {user_info["id"]}')
+            webhook_url = glob.config.webhooks['audit-log']
+            webhook = Webhook(url=webhook_url)
+            embed = Embed(title = f'')
+            embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
+            thumb_url = f'https://a.{glob.config.domain}/1'
+            embed.set_thumbnail(url=thumb_url)
+            embed.add_field(name = 'New banned user', value = f'{username} has been banned as their freeze timer has passed.', inline = True)
+            webhook.add_embed(embed)
+            await webhook.post()
+        else:
+            # timer hasnt passed, alert user they are frozen
+            data += packets.notification(
+                f'Your account is currently frozen!\n\n'
+                'This means you have 7 days to create a valid liveplay to avoid a ban.\n'
+                'Please message tsunyoku#8551 on Discord (If you need to join the Iteki discord: https://iteki.pw/discord) to be given the liveplay criteria you will be expected to meet.\n\n'
+                'Once a valid liveplay is provided, your account will be unfrozen!'
+            )
 
     # tells osu! to load channels from config, i believe?
     data += packets.channelInfoEnd()
