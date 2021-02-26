@@ -348,47 +348,115 @@ async def osuSearchHandler(p: 'Player', conn: Connection) -> Optional[bytes]:
     if not conn.args['p'].isdecimal():
         return (400, b'')
 
-    url = f'{glob.config.mirror_dl}/api/search'
-    params = {
-        'amount': 100,
-        'offset': conn.args['p'],
-        'query': conn.args['q']
-    }
+    if not glob.config.beatconnect_direct:
+        url = f'{glob.config.mirror_dl}/api/search'
+        params = {
+            'amount': 100,
+            'offset': conn.args['p'],
+            'query': conn.args['q']
+        }
 
-    if conn.args['m'] != '-1':
-        params |= {'mode': conn.args['m']}
+        if conn.args['m'] != '-1':
+            params |= {'mode': conn.args['m']}
 
-    if conn.args['r'] != '4': # 4 = all
-        # convert to osu!api status
-        status = RankedStatus.from_osudirect(int(conn.args['r']))
-        params |= {'status': status.osu_api}
+        if conn.args['r'] != '4': # 4 = all
+            # convert to osu!api status
+            status = RankedStatus.from_osudirect(int(conn.args['r']))
+            params |= {'status': status.osu_api}
 
-    async with glob.http.get(url, params = params) as resp:
-        if not resp or resp.status != 200:
-            return b'Failed to retrieve data from mirror!'
+        async with glob.http.get(url, params = params) as resp:
+            if not resp or resp.status != 200:
+                return b'Failed to retrieve data from mirror!'
 
-        result = await resp.json()
+            result = await resp.json()
 
-    lresult = len(result) # send over 100 if we receive
-                          # 100 matches, so the client
-                          # knows there are more to get
-    ret = [f"{'101' if lresult == 100 else lresult}"]
-    diff_rating = lambda map: map['DifficultyRating']
+        lresult = len(result) # send over 100 if we receive
+                            # 100 matches, so the client
+                            # knows there are more to get
+        ret = [f"{'101' if lresult == 100 else lresult}"]
+        diff_rating = lambda map: map['DifficultyRating']
 
-    for bmap in result:
-        diffs = ','.join([
-            '[{DifficultyRating:.2f}⭐] {DiffName} '
-            '{{CS{CS} OD{OD} AR{AR} HP{HP}}}@{Mode}'.format(**row)
-            for row in sorted(bmap['ChildrenBeatmaps'], key = diff_rating)
-        ])
+        for bmap in result:
+            diffs = ','.join([
+                '[{DifficultyRating:.2f}⭐] {DiffName} '
+                '{{CS{CS} OD{OD} AR{AR} HP{HP}}}@{Mode}'.format(**row)
+                for row in sorted(bmap['ChildrenBeatmaps'], key = diff_rating)
+            ])
 
-        ret.append(
-            '{SetID}.osz|{Artist}|{Title}|{Creator}|'
-            '{RankedStatus}|10.0|{LastUpdate}|{SetID}|' # TODO: rating
-            '0|0|0|0|0|{diffs}'.format(**bmap, diffs=diffs)
-        ) # 0s are threadid, has_vid, has_story, filesize, filesize_novid
+            ret.append(
+                '{SetID}.osz|{Artist}|{Title}|{Creator}|'
+                '{RankedStatus}|10.0|{LastUpdate}|{SetID}|' # TODO: rating
+                '0|0|0|0|0|{diffs}'.format(**bmap, diffs=diffs)
+            ) # 0s are threadid, has_vid, has_story, filesize, filesize_novid
 
-    return '\n'.join(ret).encode()
+        return '\n'.join(ret).encode()
+    else:
+        url = f'https://beatconnect.io/api/search'
+        if conn.args['q'] in ['Top%2BRated', 'Top Rated', 'Newest', 'Most%2BPlayed', 'Most Played']:
+            qq = ''
+        else:
+            qq = conn.args['q']
+
+        params = {
+            'p': conn.args['p'],
+            'q': qq,
+            'token': glob.config.bc_api_key
+        }
+
+        if conn.args['r'] != '4': # 4 = all
+            # convert to osu!api status
+            status = RankedStatus.from_osudirect(int(conn.args['r']))
+            if conn.args['r'] in ['0', '7']:
+                ns = 'ranked'
+            elif conn.args['r'] in ['2', '5']:
+                ns = 'unranked'
+            elif conn.args['r'] == '3':
+                ns = 'qualified'
+            elif conn.args['r'] == '8':
+                ns = 'loved'
+            params |= {'s': ns}
+        else:
+            params |= {'s': 'all'}
+        
+        if conn.args['m'] != '-1':
+            params |= {'m': conn.args['m']}
+
+        async with glob.http.get(url, params = params) as resp:
+            if not resp or resp.status != 200:
+                return b'Failed to retrieve data from beatconnect!'
+
+            result = await resp.json()
+            #log(result)
+            log(resp.url)
+            log(type(result))
+            test = open("test.json", "w")
+            test.write(str(result))
+            test.close()
+
+        lresult = len(result)
+        ret = [f"{'101' if lresult == 100 else lresult}"]
+        for e in result['beatmaps']:
+            for bmap in e['beatmaps']:
+                diffs = ','.join([
+                    '[{difficulty:.2f}⭐] {version} '
+                    '{{CS{cs} OD{accuracy} AR{ar} HP{drain}}}@{mode_int}'.format(**row)
+                    for row in sorted(bmap)
+                ])
+
+                mid = bmap['id']
+                artist = bmap['artist']
+                title = bmap['title']
+                creator = bmap['creator']
+                status = bmap['status']
+                last_updated = bmap['last_updated']
+
+                ret.append(
+                    f'{mid}.osz|{artist}|{title}|{creator}|'
+                    f'{status}|10.0|{last_updated}|{mid}|' # TODO: rating
+                    f'0|0|0|0|0|{diffs}'
+                ) # 0s are threadid, has_vid, has_story, filesize, filesize_novid
+
+        return '\n'.join(ret).encode()
 
 #    # XXX: some work on gulag's possible future mirror
 #    query = conn.args['q'].replace('+', ' ') # TODO: allow empty
@@ -2074,7 +2142,10 @@ async def get_screenshot(conn: Connection) -> Optional[bytes]:
 @domain.route(re.compile(r'^/d/\d{1,10}$'))
 async def get_osz(conn: Connection) -> Optional[bytes]:
     """Handle a map download request (osu.ppy.sh/d/*)."""
-    mirror_url = f'{glob.config.mirror_dl}/d/{conn.path[3:]}'
+    if not glob.config.beatconnect_dl:
+        mirror_url = f'{glob.config.mirror_dl}/d/{conn.path[3:]}'
+    else:
+        mirror_url = f'https://beatconnect.io/b/{conn.path[3:]}'
     conn.add_resp_header(f'Location: {mirror_url}')
     return (301, b'')
 

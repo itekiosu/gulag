@@ -53,9 +53,12 @@ osu_api_key = ''
 gzip = {'web': 4, 'disk': 9}
 
 """ osu!direct """
-# the external mirror url to use.
-mirror = 'https://api.chimu.moe' # chimu has the best cheesegull api atm but downloads dont work yet, hence the 2 config options
-# if you want to not use chimu for mirror you will need to edit osu.py as chimu's endpoints are a bit different
+# beatconnect info (optional)
+beatconnect = False
+bc_api_key = ''
+
+# the external mirror url to use. if you have beatconnect enabled, these will be used instead.
+mirror = 'https://storage.ripple.moe'
 mirror_dl = 'https://hentai.ninja'
 
 """ customization """

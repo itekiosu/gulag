@@ -3,6 +3,7 @@
 import asyncio
 import random
 import re
+import importlib
 from collections import defaultdict
 from datetime import datetime
 from time import perf_counter_ns as clock_ns
@@ -332,8 +333,10 @@ async def _deny(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     if (u := await glob.players.get(name=requester)):
         await u.send(glob.bot, msg)
     else:
+        aa = await glob.db.fetch(f'SELECT id FROM users WHERE safe_name = "{requester.lower()}"')
+        uid = aa['id']
         log('Requester offline, preparing message for next login.')
-        await glob.db.execute(f"INSERT INTO `mail` (`from_id`, `to_id`, `msg`, `time`) VALUES (1, {request['id']}, {msg}, UNIX_TIMESTAMP())")
+        await glob.db.execute("INSERT INTO `mail` (`from_id`, `to_id`, `msg`, `time`) VALUES (1, %s, %s, UNIX_TIMESTAMP())", [uid, msg])
     await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
     return 'Request denied!'
 
@@ -365,14 +368,14 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     artist = e['artist']
     title = e['title']
     embed = f"[https://osu.ppy.sh/{typem}/{request['map']} {artist} - {title} {diff}]"
-    if request["status"] == 'rank':
+    if msg[1] == 'rank':
         ns = 'ranked'
-    elif request["status"] == 'love':
+    elif msg[1] == 'love':
         ns = 'loved'
     else:
         ns = 'unranked'
     nsr = status_to_id(msg[1])
-    msg = f'Your request to {request["status"]} {embed} was approved. The map is now {ns}!'
+    msg = f"Your request to {request['status']} {embed} was approved. The map is now {ns}!"
     if request["type"] == 'set':
         # update whole set
         await glob.db.execute(
@@ -389,9 +392,20 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         if (u := await glob.players.get(name=requester)):
             await u.send(glob.bot, msg)
         else:
+            aa = await glob.db.fetch(f'SELECT id FROM users WHERE safe_name = "{requester.lower()}"')
+            uid = aa['id']
             log('Requester offline, preparing message for next login.')
-            await glob.db.execute(f'INSERT INTO `mail` (`from_id`, `to_id`, `msg`, `time`) VALUES (1, {request["id"]}, {msg}, UNIX_TIMESTAMP())')
+            await glob.db.execute("INSERT INTO `mail` (`from_id`, `to_id`, `msg`, `time`) VALUES (1, %s, %s, UNIX_TIMESTAMP())", [uid, msg])
         await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
+        webhook_url = glob.config.webhooks['ranked']
+        webhook = Webhook(url=webhook_url)
+        embed = Embed(title = f'')
+        embed.set_author(url = f"https://{glob.config.domain}/u/{p.id}", name = p.name, icon_url = f"https://a.{glob.config.domain}/{p.id}")
+        thumb_url = f'https://assets.ppy.sh/beatmaps/{request["map"]}/covers/card.jpg'
+        embed.set_image(url=thumb_url)
+        embed.add_field(name = f'New {ns} map', value = f'{artist} - {title} is now {ns}', inline = True)
+        webhook.add_embed(embed)
+        await webhook.post()
         return f'Request accepted! It is now {ns}'
     else:
         # update only map
@@ -404,8 +418,10 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         if (u := await glob.players.get(name=requester)):
             await u.send(glob.bot, msg)
         else:
+            aa = await glob.db.fetch(f'SELECT id FROM users WHERE safe_name = "{requester.lower()}"')
+            uid = aa['id']
             log('Requester offline, preparing message for next login.')
-            await glob.db.execute(f'INSERT INTO `mail` (`from_id`, `to_id`, `msg`, `time`) VALUES (1, {request["id"]}, {msg}, UNIX_TIMESTAMP())')
+            await glob.db.execute("INSERT INTO `mail` (`from_id`, `to_id`, `msg`, `time`) VALUES (1, %s, %s, UNIX_TIMESTAMP())", [uid, msg])
 
         for cached in glob.cache['beatmap'].values():
             # not going to bother checking timeout
@@ -413,6 +429,17 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
                 cached['map'].status = RankedStatus(nsr)
                 break
         await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
+        webhook_url = glob.config.webhooks['ranked']
+        webhook = Webhook(url=webhook_url)
+        embed = Embed(title = f'')
+        embed.set_author(url = f"https://{glob.config.domain}/u/{p.id}", name = p.name, icon_url = f"https://a.{glob.config.domain}/{p.id}")
+        ad = await glob.db.fetch(f'SELECT set_id FROM maps WHERE id = {request["map"]}')
+        set_id = ad['set_id']
+        thumb_url = f'https://assets.ppy.sh/beatmaps/{set_id}/covers/card.jpg'
+        embed.set_image(url=thumb_url)
+        embed.add_field(name = f'New {ns} map', value = f'{artist} - {title} {diff} is now {ns}', inline = True)
+        webhook.add_embed(embed)
+        await webhook.post()
         return f'Request accepted! It is now {ns}'
 
 @command(Privileges.Nominator, hidden=True)
@@ -792,8 +819,8 @@ async def freeze(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
 @command(Privileges.Admin, hidden=True)
 async def unfreeze(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     """Unfreeze a specified player's account"""
-    if len(msg) < 1:
-        return 'Invalid syntax: !unfreeze <name>'
+    if len(msg) < 2:
+        return 'Invalid syntax: !unfreeze <name> <reason>'
 
     # find any user matching (including offline).
     if not (t := await glob.players.get(name=msg[0], sql=True)):
@@ -802,12 +829,13 @@ async def unfreeze(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     if t.priv & Privileges.Staff and not p.priv & Privileges.Dangerous:
         return 'Only developers can manage staff members.'
 
+    reason = msg[1]
     await t.unfreeze(p, reason)
     webhook_url = glob.config.webhooks['audit-log']
     webhook = Webhook(url=webhook_url)
     embed = Embed(title = f'')
     embed.set_author(url = f"https://{glob.config.domain}/u/{p.id}", name = p.name, icon_url = f"https://a.{glob.config.domain}/{p.id}")
-    embed.add_field(name = 'New unfrozen user', value = f'{t.name} has been frozen by {p.name}.', inline = True)
+    embed.add_field(name = 'New unfrozen user', value = f'{t.name} has been unfrozen by {p.name} for {reason}.', inline = True)
     webhook.add_embed(embed)
     await webhook.post()
     return f'{t} was unfrozen.'
@@ -862,6 +890,27 @@ async def alertu(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
 # The commands below are either dangerous or
 # simply not useful for any other roles.
 """
+@command(Privileges.Dangerous, aliases=['r'])
+async def reload(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
+    """Reload a Python module."""
+    if len(msg) != 1:
+        return 'Invalid syntax: !reload <module>'
+
+    parent, *children = msg[0].split('.')
+
+    try:
+        mod = __import__(parent)
+    except ModuleNotFoundError:
+        return 'Module not found.'
+
+    try:
+        for child in children:
+            mod = getattr(mod, child)
+    except AttributeError:
+        return f'Failed at {child}.'
+
+    mod = importlib.reload(mod)
+    return f'Reloaded {mod.__name__}'
 
 @command(Privileges.Dangerous)
 async def recalc(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
