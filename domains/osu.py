@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 
 """ osu: handle connections from web, api, and beyond? """
 
-domain = Domain('osu.ppy.sh')
+domain = Domain(re.compile('iteki\.pw|osu\.iteki\.pw'))
 
 
 class Mods(IntEnum):
@@ -750,7 +750,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
             s.pp = float(s.pp * 0.97)
 
     # what the fuck are you making me do oppai
-    s.pp = float(f"{float(str(s.pp).replace('+', '').replace('e', '')):.3f}")
+    s.pp = float(f"{float(str(s.pp).replace('+', '').replace('e', '').replace('-', '')):.3f}")
 
     if not s.player.priv & Privileges.Whitelisted:
         # Get the PP cap for the current context.
@@ -915,22 +915,26 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
             'SELECT u.id, name FROM users u '
             f'LEFT JOIN {table} s ON u.id = s.userid '
             'WHERE s.map_md5 = %s AND s.mode = %s '
-            'AND s.status = 2 AND u.priv & 1 ORDER BY pp DESC LIMIT 1, 1',
+            f'AND s.status = 2 AND u.priv & 1 ORDER BY s.{scoring} DESC LIMIT 1, 1',
             [s.bmap.md5, s.mode.as_vanilla]
         )
 
-        performance = f'{s.pp:.2f}pp' if s.pp else f'{s.score}'
+        if s.bmap.awards_pp:
+            performance = f'{s.pp:,.2f}pp'
+        else:
+            performance = f'{s.score:,} score'
+        pembed = f'[https://osu.ppy.sh/u/{s.player.id} {s.player.name}]'
 
-        ann = [f'\x01ACTION achieved #1 on {s.bmap.embed}',
+        ann = [f'{pembed} achieved #1 on {s.bmap.embed}',
                f'with {s.acc:.2f}% for {performance}.']
 
         if s.mods:
             ann.insert(1, f'+{s.mods!r}')
 
-        if prev_n1: # If there was previously a score on the map, add old #1.
+        if prev_n1 and s.player.id != prev_n1['id']: # If there was previously a score on the map, add old #1.
             ann.append('(Previous #1: [https://osu.ppy.sh/u/{id} {name}])'.format(**prev_n1))
 
-        await announce_chan.send(s.player, ' '.join(ann), to_self=True)
+        await announce_chan.send(glob.bot, ' '.join(ann))
 
     # Update the user.
     s.player.recent_scores[s.mode] = s
@@ -938,7 +942,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
 
     """ score submission charts """
 
-    if s.status == SubmissionStatus.FAILED or s.mode >= GameMode.rx_std:
+    if s.status == SubmissionStatus.FAILED:
         # basically, the osu! client and the way bancho handles this
         # is dumb. if you submit a failed play on bancho, it will
         # still generate the charts and send it to the client, even

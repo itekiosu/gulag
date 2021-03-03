@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 __all__ = ()
 
 # current version of gulag
-glob.version = cmyui.Version(3, 3, 0)
+glob.version = cmyui.Version(3, 3, 1)
 
 async def setup_collections() -> None:
     """Setup & cache many global collections (mostly from sql)."""
@@ -162,6 +162,25 @@ async def before_serving() -> None:
 
         log(f"{p}'s supporter status has expired.", Ansi.MAGENTA)
 
+    async def freeze_user(userid: int, when: int):
+        if (delta := when - time.time()) >= 0:
+            await asyncio.sleep(delta)
+
+        p = await glob.players.get(id=userid, sql=True)
+
+        await p.ban(glob.bot, 'expired freeze timer')
+        await glob.db.execute(
+            'UPDATE users '
+            'SET frozen = 0 '
+            'WHERE id = %s',
+            [p.id]
+        )
+
+        if p.online:
+            p.enqueue(packets.notification('Your freeze timer expired and you did not present a liveplay. You are now banned!'))
+
+        log(f"{p}'s freeze timer has ran out and has been banned as a result", Ansi.MAGENTA)
+
     # enqueue rm_donor for any supporter
     # expiring in the next 30 days.
     query = (
@@ -169,11 +188,19 @@ async def before_serving() -> None:
         'WHERE donor_end < DATE_ADD(NOW(), INTERVAL 30 DAY) '
         'AND priv & 48' # 48 = Supporter | Premium
     )
+    query2 = (
+        'SELECT id, freezetime FROM users '
+        'WHERE freezetime < DATE_ADD(NOW(), INTERVAL 1 DAY) '
+        'AND frozen = 1'
+    )
 
     loop = asyncio.get_running_loop()
 
     async for donation in glob.db.iterall(query, _dict=False):
         loop.create_task(rm_donor(*donation))
+
+    async for cheater in glob.db.iterall(query2, _dict=False):
+        loop.create_task(freeze_user(*cheater))
 
 PING_TIMEOUT = 300000 // 1000
 async def disconnect_inactive() -> None:

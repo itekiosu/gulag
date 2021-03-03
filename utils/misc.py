@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Sequence
 
 import cmyui
+import objects.glob as glob
 from cmyui.logging import Ansi
 from cmyui.logging import log
 from cmyui.logging import printc
@@ -14,10 +15,35 @@ from cmyui.osu.replay import ReplayFrame
 from objects import glob
 
 __all__ = (
+    'geoloc_fetch',
     'point_of_interest',
     'get_average_press_times',
     'make_safe_name'
 )
+
+async def geoloc_fetch(ip_addr: str):
+    """Make http (slow) request to get geolocalization.
+    
+    Params:
+        - ip_addr: str = IP address of user that geoloc has been requested.
+    Returns:
+        Tuple of (country, lat, long)
+    """
+
+    url = f'http://ip-api.com/line/{ip_addr}'
+
+    async with glob.http.get(url) as resp:
+        if not resp or resp.status != 200:
+            log('Failed to get geoloc data: request failed.', Ansi.LRED)
+            return ("XX", 0.0, 0.0)
+
+        status, *lines = (await resp.text()).split('\n')
+
+        if status != 'success':
+            log(f'Failed to get geoloc data: {lines[0]}.', Ansi.LRED)
+            return ("XX", 0.0, 0.0)
+
+        return (lines[1], float(lines[6]), float(lines[7])) # Country, lat, long
 
 def point_of_interest():
     """Leave a pseudo-breakpoint somewhere to ask the user if

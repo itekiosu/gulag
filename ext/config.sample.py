@@ -53,8 +53,9 @@ osu_api_key = ''
 gzip = {'web': 4, 'disk': 9}
 
 """ osu!direct """
-# beatconnect info (optional)
-beatconnect = False
+# beatconnect info (optional) | dont use this as it doesnt actually work at the minute
+beatconnect_direct = False
+beatconnect_dl = False
 bc_api_key = ''
 
 # the external mirror url to use. if you have beatconnect enabled, these will be used instead.
@@ -65,14 +66,15 @@ mirror_dl = 'https://hentai.ninja'
 # the menu icon displayed on
 # the main menu of osu! in-game.
 menu_icon = (
-    'https://akatsuki.pw/static/logos/logo_ingame.png', # image URL
-    'https://akatsuki.pw' # onclick URL
+    'https://i.imgur.com/xkVs1f3.png', # image URL
+    'https://iteki.pw' # onclick URL
 )
 
 # seasonal backgrounds to be displayed
 seasonal_bgs = (
     'https://akatsuki.pw/static/flower.png',
 )
+
 
 # in-game bot command prefix.
 command_prefix = '!'
@@ -143,10 +145,3 @@ datadog = {
     'api_key': '',
     'app_key': ''
 }
-
-# used for geolocation
-# if you do not wish to use this (means database wont insert user flags) then make this false
-geo = True
-# if you are using true, you need to get an access token here: 
-# leave these blank if you aren't using geo
-access_token = ''

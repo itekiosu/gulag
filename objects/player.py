@@ -13,6 +13,10 @@ from typing import Any
 from typing import Coroutine
 from typing import Optional
 from typing import TYPE_CHECKING
+try:
+    from utils.private.localise import geoloc_fetch
+except ImportError:
+    from utils.misc import geoloc_fetch
 from geopy.geocoders import Nominatim
 
 from cmyui import Ansi
@@ -375,6 +379,9 @@ class Player:
             'VALUES (%s, %s, %s, NOW())',
             [admin.id, self.id, log_msg]
         )
+        for mode in ('vn_std', 'rx_std', 'ap_std', 'vn_catch', 'rx_catch', 'vn_taiko', 'rx_taiko', 'vn_mania'):
+            await glob.db.execute(f'UPDATE stats SET rank_{mode} = 0 WHERE id = {self.id}')
+            await glob.db.execute(f'UPDATE stats SET crank_{mode} = 0 WHERE id = {self.id}')
 
         if self in glob.players:
             # if user is online, notify and log them out.
@@ -426,6 +433,11 @@ class Player:
             self.enqueue(packets.notification(
                 'Your account has been unfrozen. Thank you for co-operating!'
             ))
+        else:
+            await glob.db.execute(
+                f'INSERT INTO mail (`from_id`, `to_id`, `msg`, `time`, `read`) VALUES (1, {self.id}, "Your account has been unfrozen. Thank you for co-operating!", UNIX_TIMESTAMP(), 0)'
+            )
+
 
     async def unban(self, admin: 'Player', reason: str) -> None:
         """Unban `self` for `reason`, and log to sql."""
@@ -711,23 +723,9 @@ class Player:
 
     async def fetch_geoloc(self, ip: str) -> None:
         """Fetch a player's geolocation data based on their ip."""
-        url = f'http://ip-api.com/line/{ip}'
 
-        async with glob.http.get(url) as resp:
-            if not resp or resp.status != 200:
-                log('Failed to get geoloc data: request failed.', Ansi.LRED)
-                return
-
-            status, *lines = (await resp.text()).split('\n')
-
-            if status != 'success':
-                log(f'Failed to get geoloc data: {lines[0]}.', Ansi.LRED)
-                return
-
-        country = lines[1]
-
-        # store their country as a 2-letter code, and as a number.
-        # the players location is stored for the ingame world map.
+        # Call a function
+        country, lat, _long = await geoloc_fetch(ip)
 
         # this is genuinely the worst thing i have ever made, desperate async friendly version needed soontm because this batters the fast login time
         if self.priv & Privileges.Staff or self.priv & Privileges.Donator or self.priv & Privileges.Alumni or self.priv & Privileges.Nominator:
@@ -737,9 +735,11 @@ class Player:
                 [self.id]
             )
             e = res['c']
+            self.location = (lat, _long) # We will use their public loc even with changed country.
             self.country = (country_codes[e.upper()], e.upper())
         else:
             self.country = (country_codes[country], country)
+            self.location = (lat, _long)
 
     async def unlock_achievement(self, a: 'Achievement') -> None:
         """Unlock `ach` for `self`, storing in both cache & sql."""

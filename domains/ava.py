@@ -8,7 +8,7 @@ from cmyui import Domain
 
 """ ava: avatar server (for both ingame & external) """
 
-domain = Domain('a.ppy.sh')
+domain = Domain('a.iteki.pw')
 
 AVATARS_PATH = Path.cwd() / '.data/avatars'
 DEFAULT_AVATAR = AVATARS_PATH / 'default.png'

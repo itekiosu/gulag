@@ -333,10 +333,13 @@ async def _deny(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     if (u := await glob.players.get(name=requester)):
         await u.send(glob.bot, msg)
     else:
-        aa = await glob.db.fetch(f'SELECT id FROM users WHERE safe_name = "{requester.lower()}"')
-        uid = aa['id']
-        log('Requester offline, preparing message for next login.')
-        await glob.db.execute("INSERT INTO `mail` (`from_id`, `to_id`, `msg`, `time`) VALUES (1, %s, %s, UNIX_TIMESTAMP())", [uid, msg])
+        try:
+            aa = await glob.db.fetch(f'SELECT id FROM users WHERE safe_name = "{requester.lower()}"')
+            uid = aa['id']
+            log('Requester offline, preparing message for next login.')
+            await glob.db.execute("INSERT INTO `mail` (`from_id`, `to_id`, `msg`, `time`) VALUES (1, %s, %s, UNIX_TIMESTAMP())", [uid, msg])
+        except:
+            log('Requester offline, unable to prepare message.')
     await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
     return 'Request denied!'
 
@@ -392,10 +395,13 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         if (u := await glob.players.get(name=requester)):
             await u.send(glob.bot, msg)
         else:
-            aa = await glob.db.fetch(f'SELECT id FROM users WHERE safe_name = "{requester.lower()}"')
-            uid = aa['id']
-            log('Requester offline, preparing message for next login.')
-            await glob.db.execute("INSERT INTO `mail` (`from_id`, `to_id`, `msg`, `time`) VALUES (1, %s, %s, UNIX_TIMESTAMP())", [uid, msg])
+            try:
+                aa = await glob.db.fetch(f'SELECT id FROM users WHERE safe_name = "{requester.lower()}"')
+                uid = aa['id']
+                log('Requester offline, preparing message for next login.')
+                await glob.db.execute("INSERT INTO `mail` (`from_id`, `to_id`, `msg`, `time`) VALUES (1, %s, %s, UNIX_TIMESTAMP())", [uid, msg])
+            except:
+                log('Requester offline, unable to prepare message.')
         await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
         webhook_url = glob.config.webhooks['ranked']
         webhook = Webhook(url=webhook_url)

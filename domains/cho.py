@@ -36,10 +36,14 @@ from packets import BanchoPacket
 from packets import BanchoPacketReader
 from packets import Packets
 from utils.misc import make_safe_name
+try:
+    from utils.private.localise import geoloc_fetch
+except ImportError:
+    from utils.misc import geoloc_fetch
 
 """ Bancho: handle connections from the osu! client """
 
-domain = Domain(re.compile(r'^c[e4-6]?\.(iteki\.pw|ppy\.sh)$'))
+domain = Domain(re.compile(r'^c[e4-6]?\.(iteki\.pw)$'))
 
 @domain.route('/')
 async def bancho_http_handler(conn: Connection) -> bytes:
@@ -279,33 +283,39 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     if len(s := s[2].split('|')) != 5:
         return packets.userID(-2), 'no'
 
+    e = await glob.db.fetch('SELECT unsupver, banver FROM server_stats')
+    unsupvers = e['unsupver']
+    banvers = e['banver']
+    if s[0] in banvers:
+        if not (t := await glob.players.get(name=username, sql=True)):
+            return f'"{username}" not found.'
+        reason = 'Cheat client found.'
+        await t.ban(p, reason)
+
+    if s[0] in unsupvers:
+        data = packets.userID(-1) + \
+                packets.notification('Iteki Client is now unsupported. Please join our Discord (https://iteki.pw/discord) for further instructions on how to connect.')
+
+        return data, 'no'
+
     if not (r := regexes.osu_ver.match(s[0])):
         # invalid client version?
         return packets.userID(-2), 'no'
 
-    # quite a bit faster
-    # than using strptime
     osu_ver = dt(
-        year = int(r['ver'][0:4]),
-        month = int(r['ver'][4:6]),
-        day = int(r['ver'][6:8])
+         year = int(r['ver'][0:4]),
+         month = int(r['ver'][4:6]),
+         day = int(r['ver'][6:8])
     )
 
-    if not glob.config.debug:
-        # disallow the login if their osu! client is older
-        # than two months old, forcing an update re-check.
-        if r['ver'] in ("0ainu", "b20190326.2", "b20190401.22f56c084ba339eefd9c7ca4335e246f80", "b20190906.1", "b20191223.3", "b20190226.2", "b20190716.5"):
-            if not (t := await glob.players.get(name=username, sql=True)):
-                return f'"{username}" not found.'
-            reason = 'Cheat client found.'
-            await t.ban(p, reason)
-        if int(r['ver']) < 20210125:
-            return (packets.versionUpdateForced() +
-                    packets.userID(-2)), 'no'
-        if osu_ver < (dt.now() - td(60)):
-            return (packets.versionUpdateForced() +
-                    packets.userID(-2)), 'no'
+    if int(r['ver']) < 20210125:
+        return (packets.versionUpdateForced() +
+                packets.userID(-2)), 'no'
+    if osu_ver < (dt.now() - td(60)):
+        return (packets.versionUpdateForced() +
+                packets.userID(-2)), 'no'
 
+    
     if not _isdecimal(s[1], _negative=True):
         # utc-offset isn't a number (negative inclusive).
         return packets.userID(-1), 'no'
@@ -451,10 +461,9 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         await webhook.post()
 
     # set country
-    if glob.config.geo and not user_info['priv'] & Privileges.Staff and not user_info['priv'] & Privileges.Nominator:
-        info = ipinfo.getHandlerAsync(glob.config.access_token)
-        details = await info.getDetails(ip)
-        country = details.country.lower()
+    if not user_info['priv'] & Privileges.Staff and not user_info['priv'] & Privileges.Nominator:
+        country1 = await geoloc_fetch(ip)
+        country = country1[0].lower()
         await glob.db.execute(
             'UPDATE users '
             'SET country = %s '
@@ -473,7 +482,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
 
     # user_info: {id, name, priv, pw_bcrypt, silence_end}
     p = Player.login(user_info, utc_offset=utc_offset,
-                     osu_ver=osu_ver, pm_private=pm_private,
+                     osu_ver=s[0], pm_private=pm_private,
                      login_time=login_time, clan=clan,
                      clan_rank=clan_rank)
 
@@ -484,25 +493,40 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         data += packets.notification('Welcome back to Iteki!\n'
                                     f'Current build: {glob.version}')
     else:
-        data += packets.notification('Welcome to Iteki!\nIf you need any help please join our Discord (https://iteki.pw/discord) and use !help to see all available commands.\n\nEnjoy!')
+        data += packets.sendMessage(
+            'Ruji', 
+            'Welcome to Iteki!\n\nIteki has a relatively unique experience from other servers as it is based on different source code and has many unique features.'
+            '\n\nTo get started, you may be interested in knowing some useful commands:\n\n!req <rank/love> <set/map> - this is our request system:'
+            '\nTo use this command you must first /np a map to Ruji (our bot) and you will then be able to request maps.'
+            '\nThe choice between rank/love depends on whether you would like to request the map to be ranked or loved.\nThe map/set choices are depending on whether you want the entire set to be requested, or just the difficulty you did /np to.'
+            '\n\nThats all you need to know for now.\nIf you have any issues please report them and have fun playing Iteki!\n\n',
+            p.id,
+            1
+        )
+
+    if p.priv & Privileges.Nominator and not p.priv & Privileges.Staff:
+        request = await glob.db.fetch('SELECT COUNT(id) AS count FROM requests')
+        if int(request["count"]) > 0:
+            data += packets.notification(f'There is {request["count"]} outstanding map requests!')
 
     if int(user_info['frozen']) == 1:
         if dt.now().timestamp() > user_info['freezetime']:
-            # user still frozen and their timer has passed
-            if not (t := await glob.players.get(name=username, sql=True)):
-                return f'"{username}" not found.'
-            reason = 'Freeze timer passed.'
-            await t.ban(p, reason)
-            await glob.db.execute(f'UPDATE users SET frozen = 0 WHERE id = {user_info["id"]}')
-            webhook_url = glob.config.webhooks['audit-log']
-            webhook = Webhook(url=webhook_url)
-            embed = Embed(title = f'')
-            embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
-            thumb_url = f'https://a.{glob.config.domain}/1'
-            embed.set_thumbnail(url=thumb_url)
-            embed.add_field(name = 'New banned user', value = f'{username} has been banned as their freeze timer has passed.', inline = True)
-            webhook.add_embed(embed)
-            await webhook.post()
+            return (packets.notification('You are banned as a result of not providing a liveplay.') + packets.userID(-1)), 'no'
+            # user still frozen and their timer has passed // below code commented as bg loops now handle this process
+            # if not (t := await glob.players.get(name=username, sql=True)):
+            #     return f'"{username}" not found.'
+            # reason = 'Freeze timer passed.'
+            # await t.ban(p, reason)
+            # await glob.db.execute(f'UPDATE users SET frozen = 0 WHERE id = {user_info["id"]}')
+            # webhook_url = glob.config.webhooks['audit-log']
+            # webhook = Webhook(url=webhook_url)
+            # embed = Embed(title = f'')
+            # embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
+            # thumb_url = f'https://a.{glob.config.domain}/1'
+            # embed.set_thumbnail(url=thumb_url)
+            # embed.add_field(name = 'New banned user', value = f'{username} has been banned as their freeze timer has passed.', inline = True)
+            # webhook.add_embed(embed)
+            # await webhook.post()
         else:
             # timer hasnt passed, alert user they are frozen
             data += packets.notification(
