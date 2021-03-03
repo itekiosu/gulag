@@ -912,7 +912,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
     ):
         # Announce the user's #1 score.
         if s.mode in (GameMode.rx_std, GameMode.ap_std):
-            e = await glob.db.fetch(f'SELECT lb_pp FROM stats WHERE id = {p.id}')
+            e = await glob.db.fetch(f'SELECT lb_pp FROM stats WHERE id = {s.player.id}')
             if e['lb_pp'] == 1:
                 scoring = 'pp'
             else:
@@ -927,7 +927,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
             [s.bmap.md5, s.mode.as_vanilla]
         )
 
-        if s.bmap.awards_pp:
+        if s.bmap.status in (RankedStatus.Ranked, RankedStatus.Approved):
             performance = f'{s.pp:,.2f}pp'
         else:
             performance = f'{s.score:,} score'
