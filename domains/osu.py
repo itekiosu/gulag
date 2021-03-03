@@ -931,7 +931,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
             performance = f'{s.pp:,.2f}pp'
         else:
             performance = f'{s.score:,} score'
-        pembed = f'[https://osu.ppy.sh/u/{s.player.id} {s.player.name}]'
+        pembed = f'[https://osu.iteki.pw/u/{s.player.id} {s.player.name}]'
 
         ann = [f'{pembed} achieved #1 on {s.bmap.embed}',
                f'with {s.acc:.2f}% for {performance}.']
@@ -940,7 +940,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
             ann.insert(1, f'+{s.mods!r}')
 
         if prev_n1 and s.player.id != prev_n1['id']: # If there was previously a score on the map, add old #1.
-            ann.append('(Previous #1: [https://osu.ppy.sh/u/{id} {name}])'.format(**prev_n1))
+            ann.append('(Previous #1: [https://osu.iteki.pw/u/{id} {name}])'.format(**prev_n1))
 
         await announce_chan.send(glob.bot, ' '.join(ann))
 
@@ -1060,20 +1060,14 @@ REPLAYS_PATH_AP = Path.cwd() / '.data/osr_ap'
 @required_args({'u', 'h', 'm', 'c'})
 @get_login('u', 'h')
 async def getReplay(p: 'Player', conn: Connection) -> Optional[bytes]:
-    replay_file = REPLAYS_PATH / f'{conn.args["c"]}.osr'
-
-    # osu! expects empty resp for no replay
-    if replay_file.exists():
+    replay_file = REPLAYS_PATH_RX / f'{conn.args["c"]}.osr'
+    if p.status.mods & Mods.RELAX:
         return replay_file.read_bytes()
-    else:
-        replay_file = REPLAYS_PATH_RX / f'{conn.args["c"]}.osr'
-
-    if replay_file.exists():
-        return replay_file.read_bytes()
-    else:
+    elif p.status.mods & Mods.RELAX2:
         replay_file = REPLAYS_PATH_AP / f'{conn.args["c"]}.osr'
-
-    if replay_file.exists():
+        return replay_file.read_bytes()
+    else:
+        replay_file = REPLAYS_PATH / f'{conn.args["c"]}.osr'
         return replay_file.read_bytes()
 
 # XXX: going to be slightly more annoying than expected to set this up :P

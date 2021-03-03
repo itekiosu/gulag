@@ -300,6 +300,9 @@ async def _with(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
 status_to_id = lambda s: {
     'unrank': 0,
     'rank': 2,
+    # my nominators are apes
+    'ranked': 2,
+    'loved': 5,
     'love': 5
 }[s]
 
