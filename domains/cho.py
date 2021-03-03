@@ -81,7 +81,10 @@ async def bancho_handler(conn: Connection) -> bytes:
         return resp
 
     # get the player from the specified osu token.
-    player = await glob.players.get(token=conn.headers['osu-token'])
+    try:
+        player = await glob.players.get(token=conn.headers['osu-token'])
+    except:
+        return
 
     if not player:
         # token was not found; changes are, we just restarted
@@ -481,35 +484,14 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         del user_info['clan_rank']
         clan = clan_rank = None
 
-    extras = {
-        'utc_offset': utc_offset,
-        'osu_ver': osu_ver,
-        'pm_private': pm_private,
-        'login_time': login_time,
-        'clan': clan,
-        'clan_rank': clan_rank
-    }
+    # user_info: {id, name, priv, pw_bcrypt, silence_end}
+    p = Player.login(user_info, utc_offset=utc_offset,
+                     osu_ver=s[0], pm_private=pm_private,
+                     login_time=login_time, clan=clan,
+                     clan_rank=clan_rank)
 
-    p = Player(
-        **user_info, # {id, name, priv, pw_bcrypt, silence_end}
-        **extras     # {utc_offset, osu_ver, pm_private,
-                     #  login_time, clan, clan_rank}
-    )
-
-    for mode in GameMode:
-        p.recent_scores[mode] = None # TODO: sql?
-        p.stats[mode] = None
-
-    data = bytearray(packets.protocolVersion(19))
-    data += packets.userID(p.id)
-
-    # *real* client privileges are sent with this packet,
-    # then the user's apparent privileges are sent in the
-    # userPresence packets to other players. we'll send
-    # supporter along with the user's privileges here,
-    # but not in userPresence (so that only donators
-    # show up with the yellow name in-game, but everyone
-    # gets osu!direct & other in-game perks).
+    data = bytearray(packets.userID(p.id))
+    data += packets.protocolVersion(19)
     data += packets.banchoPrivileges(
         p.bancho_priv | ClientPrivileges.Supporter
     )
