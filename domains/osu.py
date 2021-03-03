@@ -911,6 +911,14 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         (announce_chan := glob.channels['#announce'])
     ):
         # Announce the user's #1 score.
+        if s.mode in (GameMode.rx_std, GameMode.ap_std):
+            e = await glob.db.fetch(f'SELECT lb_pp FROM stats WHERE id = {p.id}')
+            if e['lb_pp'] == 1:
+                scoring = 'pp'
+            else:
+                scoring = 'score'
+        else:
+            scoring = 'score'
         prev_n1 = await glob.db.fetch(
             'SELECT u.id, name FROM users u '
             f'LEFT JOIN {table} s ON u.id = s.userid '
