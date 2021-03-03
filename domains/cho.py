@@ -20,6 +20,7 @@ from constants import commands
 from constants import regexes
 from constants.gamemodes import GameMode
 from constants.mods import Mods
+from constants.privileges import ClientPrivileges
 from constants.privileges import Privileges
 from constants.types import osuTypes
 from objects import glob
