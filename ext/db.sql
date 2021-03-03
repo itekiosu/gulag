@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Feb 15, 2021 at 10:56 PM
+-- Generation Time: Mar 03, 2021 at 05:58 PM
 -- Server version: 5.7.32-0ubuntu0.18.04.1
 -- PHP Version: 7.2.24-0ubuntu0.18.04.7
 
@@ -31,7 +31,7 @@ CREATE TABLE `achievements` (
   `file` varchar(128) NOT NULL,
   `name` varchar(128) CHARACTER SET utf8 NOT NULL,
   `desc` varchar(256) CHARACTER SET utf8 NOT NULL,
-  `cond` varchar(64) NOT NULL,
+  `cond` varchar(256) NOT NULL,
   `mode` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -45,7 +45,8 @@ CREATE TABLE `beta_keys` (
   `beta_key` varchar(20) NOT NULL,
   `used` int(1) NOT NULL DEFAULT '0',
   `generated_by` varchar(200) NOT NULL,
-  `user` varchar(200) DEFAULT NULL
+  `user` varchar(200) DEFAULT NULL,
+  `for_id` bigint(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -117,7 +118,7 @@ CREATE TABLE `comments` (
 --
 
 CREATE TABLE `discord` (
-  `tag` varchar(110) NOT NULL,
+  `tag` varchar(110) CHARACTER SET utf8 NOT NULL,
   `user` int(11) NOT NULL,
   `code` varchar(110) NOT NULL,
   `tag_id` bigint(255) NOT NULL
@@ -169,7 +170,7 @@ CREATE TABLE `mail` (
   `id` int(11) NOT NULL,
   `from_id` int(11) NOT NULL,
   `to_id` int(11) NOT NULL,
-  `msg` varchar(2048) CHARACTER SET utf8 NOT NULL,
+  `msg` text CHARACTER SET utf8 NOT NULL,
   `time` int(11) DEFAULT NULL,
   `read` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -226,6 +227,19 @@ CREATE TABLE `performance_reports` (
   `completion` tinyint(1) NOT NULL,
   `identifier` varchar(128) DEFAULT NULL COMMENT 'really don''t know much about this yet',
   `average_frametime` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pwreset`
+--
+
+CREATE TABLE `pwreset` (
+  `uid` int(100) NOT NULL,
+  `code` varchar(100) NOT NULL,
+  `used` int(1) NOT NULL,
+  `gentime` int(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -355,7 +369,9 @@ CREATE TABLE `scores_vn` (
 
 CREATE TABLE `server_stats` (
   `online` int(100) NOT NULL DEFAULT '0',
-  `total` int(100) NOT NULL DEFAULT '0'
+  `total` int(100) NOT NULL DEFAULT '0',
+  `unsupver` text NOT NULL,
+  `banver` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -501,9 +517,11 @@ CREATE TABLE `users` (
   `latest_activity` int(11) NOT NULL DEFAULT '0',
   `clan_id` int(11) NOT NULL DEFAULT '0',
   `clan_rank` tinyint(1) NOT NULL DEFAULT '0',
-  `keygen` int(11) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 VALUES (1, 'Ruji', 'ruji', 1, 'sl', 0, 'contact@iteki.pw',
-        '_______________________my_cool_bcrypt_______________________', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());;
+  `keygen` int(11) NOT NULL DEFAULT '0',
+  `frozen` int(11) NOT NULL DEFAULT '0',
+  `freezetime` int(11) NOT NULL DEFAULT '0',
+  `verified` int(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
 
@@ -512,6 +530,28 @@ CREATE TABLE `users` (
 --
 
 CREATE TABLE `user_achievements` (
+  `userid` int(11) NOT NULL,
+  `achid` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_achievements_ap`
+--
+
+CREATE TABLE `user_achievements_ap` (
+  `userid` int(11) NOT NULL,
+  `achid` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_achievements_rx`
+--
+
+CREATE TABLE `user_achievements_rx` (
   `userid` int(11) NOT NULL,
   `achid` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -625,6 +665,12 @@ ALTER TABLE `performance_reports`
   ADD PRIMARY KEY (`scoreid`,`mod_mode`);
 
 --
+-- Indexes for table `pwreset`
+--
+ALTER TABLE `pwreset`
+  ADD PRIMARY KEY (`code`);
+
+--
 -- Indexes for table `ratings`
 --
 ALTER TABLE `ratings`
@@ -642,19 +688,25 @@ ALTER TABLE `requests`
 -- Indexes for table `scores_ap`
 --
 ALTER TABLE `scores_ap`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `id` (`id`,`map_md5`,`score`,`pp`,`acc`,`max_combo`,`mods`,`n300`,`n100`,`n50`,`nmiss`,`ngeki`,`nkatu`,`grade`,`status`,`mode`),
+  ADD KEY `play_time` (`play_time`,`time_elapsed`,`client_flags`,`userid`,`perfect`,`mods_readable`);
 
 --
 -- Indexes for table `scores_rx`
 --
 ALTER TABLE `scores_rx`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `id` (`id`,`map_md5`,`score`,`pp`,`acc`,`max_combo`,`mods`,`n300`,`n100`,`n50`,`nmiss`,`ngeki`,`nkatu`,`grade`,`status`,`mode`),
+  ADD KEY `play_time` (`play_time`,`time_elapsed`,`client_flags`,`userid`,`perfect`,`mods_readable`);
 
 --
 -- Indexes for table `scores_vn`
 --
 ALTER TABLE `scores_vn`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `id` (`id`,`map_md5`,`score`,`pp`,`acc`,`max_combo`,`mods`,`n300`,`n100`,`n50`,`nmiss`,`ngeki`,`nkatu`,`grade`,`status`,`mode`),
+  ADD KEY `play_time` (`play_time`,`time_elapsed`,`client_flags`,`userid`,`perfect`,`mods_readable`);
 
 --
 -- Indexes for table `startups`
@@ -666,7 +718,12 @@ ALTER TABLE `startups`
 -- Indexes for table `stats`
 --
 ALTER TABLE `stats`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `id` (`id`,`tscore_vn_std`,`tscore_vn_taiko`,`tscore_vn_catch`,`tscore_vn_mania`,`tscore_rx_std`,`tscore_rx_taiko`,`tscore_rx_catch`,`tscore_ap_std`,`rscore_vn_std`,`rscore_vn_taiko`,`rscore_vn_catch`,`rscore_vn_mania`,`rscore_rx_std`,`rscore_rx_taiko`,`rscore_rx_catch`),
+  ADD KEY `rscore_ap_std` (`rscore_ap_std`,`pp_vn_std`,`pp_vn_taiko`,`pp_vn_catch`,`pp_vn_mania`,`pp_rx_std`,`pp_rx_taiko`,`pp_rx_catch`,`pp_ap_std`,`plays_vn_std`,`plays_vn_taiko`,`plays_vn_catch`,`plays_vn_mania`,`plays_rx_std`,`plays_rx_taiko`,`plays_rx_catch`),
+  ADD KEY `plays_ap_std` (`plays_ap_std`,`playtime_vn_std`,`playtime_vn_taiko`,`playtime_vn_catch`,`playtime_vn_mania`,`playtime_rx_std`,`playtime_rx_taiko`,`playtime_rx_catch`,`playtime_ap_std`,`acc_vn_std`,`acc_vn_taiko`,`acc_vn_catch`,`acc_vn_mania`,`acc_rx_std`),
+  ADD KEY `acc_rx_taiko` (`acc_rx_taiko`,`acc_rx_catch`,`acc_ap_std`,`maxcombo_vn_std`,`maxcombo_vn_taiko`,`maxcombo_vn_catch`,`maxcombo_vn_mania`,`maxcombo_rx_std`,`maxcombo_rx_taiko`,`maxcombo_rx_catch`,`maxcombo_ap_std`,`rank_vn_std`,`rank_rx_std`,`rank_ap_std`,`rank_rx_taiko`),
+  ADD KEY `rank_rx_catch` (`rank_rx_catch`,`rank_vn_taiko`,`rank_vn_catch`,`rank_vn_mania`,`crank_vn_std`,`crank_rx_std`,`crank_ap_std`,`crank_vn_taiko`,`crank_vn_catch`,`crank_vn_mania`,`crank_rx_taiko`,`crank_rx_catch`,`lb_pp`);
 
 --
 -- Indexes for table `tourney_pools`
@@ -689,12 +746,25 @@ ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `users_email_uindex` (`email`),
   ADD UNIQUE KEY `users_name_uindex` (`name`),
-  ADD UNIQUE KEY `users_safe_name_uindex` (`safe_name`);
+  ADD UNIQUE KEY `users_safe_name_uindex` (`safe_name`),
+  ADD KEY `id` (`id`,`name`,`safe_name`,`email`,`priv`,`pw_bcrypt`,`country`,`silence_end`,`donor_end`,`creation_time`,`latest_activity`,`clan_id`,`clan_rank`,`keygen`,`frozen`,`freezetime`);
 
 --
 -- Indexes for table `user_achievements`
 --
 ALTER TABLE `user_achievements`
+  ADD PRIMARY KEY (`userid`,`achid`);
+
+--
+-- Indexes for table `user_achievements_ap`
+--
+ALTER TABLE `user_achievements_ap`
+  ADD PRIMARY KEY (`userid`,`achid`);
+
+--
+-- Indexes for table `user_achievements_rx`
+--
+ALTER TABLE `user_achievements_rx`
   ADD PRIMARY KEY (`userid`,`achid`);
 
 --
@@ -711,7 +781,7 @@ ALTER TABLE `user_hashes`
 -- AUTO_INCREMENT for table `achievements`
 --
 ALTER TABLE `achievements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=87;
 --
 -- AUTO_INCREMENT for table `channels`
 --
@@ -721,7 +791,7 @@ ALTER TABLE `channels`
 -- AUTO_INCREMENT for table `clans`
 --
 ALTER TABLE `clans`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 --
 -- AUTO_INCREMENT for table `comments`
 --
@@ -731,42 +801,42 @@ ALTER TABLE `comments`
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
 --
 -- AUTO_INCREMENT for table `mail`
 --
 ALTER TABLE `mail`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1418;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2262;
 --
 -- AUTO_INCREMENT for table `requests`
 --
 ALTER TABLE `requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=98;
 --
 -- AUTO_INCREMENT for table `scores_ap`
 --
 ALTER TABLE `scores_ap`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=337;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=422;
 --
 -- AUTO_INCREMENT for table `scores_rx`
 --
 ALTER TABLE `scores_rx`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5834;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11980;
 --
 -- AUTO_INCREMENT for table `scores_vn`
 --
 ALTER TABLE `scores_vn`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9062;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15543;
 --
 -- AUTO_INCREMENT for table `startups`
 --
 ALTER TABLE `startups`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=282;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=515;
 --
 -- AUTO_INCREMENT for table `stats`
 --
 ALTER TABLE `stats`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=90;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=140;
 --
 -- AUTO_INCREMENT for table `tourney_pools`
 --
@@ -776,7 +846,7 @@ ALTER TABLE `tourney_pools`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=90;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=140;
 --
 -- AUTO_INCREMENT for table `user_hashes`
 --
