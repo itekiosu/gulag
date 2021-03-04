@@ -950,7 +950,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
 
     """ score submission charts """
 
-    if s.status == SubmissionStatus.FAILED:
+    if s.status == SubmissionStatus.FAILED or s.mode >= GameMode.rx_std:
         # basically, the osu! client and the way bancho handles this
         # is dumb. if you submit a failed play on bancho, it will
         # still generate the charts and send it to the client, even
@@ -1559,23 +1559,12 @@ async def checkUpdates(conn: Connection) -> Optional[bytes]:
         # client is just reporting an error updating
         return
 
-    cache = glob.cache['update'][stream]
-    current_time = int(time.time())
-
-    if cache[action] and cache['timeout'] > current_time:
-        return cache[action]
-
     url = 'https://old.ppy.sh/web/check-updates.php'
     async with glob.http.get(url, params = conn.args) as resp:
         if not resp or resp.status != 200:
             return (503, b'Failed to retrieve data from osu!')
 
         result = await resp.read()
-
-    # update the cached result.
-    cache[action] = result
-    cache['timeout'] = (glob.config.updates_cache_timeout +
-                        current_time)
 
     return result
 

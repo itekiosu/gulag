@@ -89,8 +89,7 @@ async def bancho_handler(conn: Connection) -> bytes:
     if not player:
         # token was not found; changes are, we just restarted
         # the server. just tell their client to re-connect.
-        return packets.notification('Server is restarting..\n\nThis may happen often and please dont panic!\nAny scores you set will still submit as long as your game remains open, and you will be automatically logged back in within 1-2 seconds.') + \
-               packets.restartServer(0) # send 0ms since server is up
+        return packets.restartServer(0)
 
     # bancho connections can be comprised of multiple packets;
     # our reader is designed to iterate through them individually,

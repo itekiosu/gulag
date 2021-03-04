@@ -232,7 +232,17 @@ async def _req(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         diff = f'[{p.last_np.version}]'
     else:
         diff = ''
-    embed.add_field(name = f'New request to {msg[0]} {msg[1]} from {p.name}. Please check the request ingame!', value = f'{p.last_np.artist} - {p.last_np.title} {diff}', inline = True)
+    if 'std' in p.last_np.mode:
+        mode = 'osu!standard'
+    elif 'taiko' in p.last_np.mode:
+        mode = 'osu!taiko'
+    elif 'catch' in p.last_np.mode:
+        mode = 'osu!catch'
+    elif 'mania' in p.last_np.mode:
+        mode = 'osu!mania'
+    else:
+        mode = None
+    embed.add_field(name = f'New request to {msg[0]} {msg[1]} from {p.name}. Please check the request ingame! (Mode: {mode})', value = f'[{p.last_np.artist} - {p.last_np.title} {diff}](https://osu.ppy.sh/b/{p.last_np.id})', inline = True)
     webhook.add_embed(embed)
     await webhook.post()
 
@@ -412,7 +422,7 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         embed.set_author(url = f"https://{glob.config.domain}/u/{p.id}", name = p.name, icon_url = f"https://a.{glob.config.domain}/{p.id}")
         thumb_url = f'https://assets.ppy.sh/beatmaps/{request["map"]}/covers/card.jpg'
         embed.set_image(url=thumb_url)
-        embed.add_field(name = f'New {ns} map', value = f'{artist} - {title} is now {ns}', inline = True)
+        embed.add_field(name = f'New {ns} map', value = f'[{artist} - {title}](https://osu.ppy.sh/s/{request["map"]}) is now {ns}', inline = True)
         webhook.add_embed(embed)
         await webhook.post()
         return f'Request accepted! It is now {ns}'
@@ -446,7 +456,7 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         set_id = ad['set_id']
         thumb_url = f'https://assets.ppy.sh/beatmaps/{set_id}/covers/card.jpg'
         embed.set_image(url=thumb_url)
-        embed.add_field(name = f'New {ns} map', value = f'{artist} - {title} {diff} is now {ns}', inline = True)
+        embed.add_field(name = f'New {ns} map', value = f'[{artist} - {title} {diff}](https://osu.ppy.sh/b/{request["map"]}) is now {ns}', inline = True)
         webhook.add_embed(embed)
         await webhook.post()
         return f'Request accepted! It is now {ns}'
@@ -582,7 +592,7 @@ async def _requests(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         else:
             m = 'id'
 
-        e = await glob.db.fetch(f'SELECT version, artist, title FROM maps WHERE {m} = {request["map"]}')
+        e = await glob.db.fetch(f'SELECT version, artist, title, mode FROM maps WHERE {m} = {request["map"]}')
         if request["type"] == 'set':
             typem = 's'
             diff = ''
@@ -592,6 +602,7 @@ async def _requests(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         
         artist = e['artist']
         title = e['title']
+        intmode = e['mode']
         embed = f"[https://osu.ppy.sh/{typem}/{request['map']} {artist} - {title} {diff}]"
         rankm = await p.add_to_menu(rank)
         lovem = await p.add_to_menu(love)
@@ -601,7 +612,17 @@ async def _requests(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         embedl = f'[osu://dl/{lovem} Love]'
         embedu = f'[osu://dl/{unrankm} Unrank]'
         embedd = f"[osu://dl/{denym} Deny (don't change status)]"
-        await p.send(glob.bot, f'Request #{request["id"]}: {request["requester"]} requested {request["type"]} {embed} to be {ns}.')
+        if intmode == 0:
+            mode = 'osu!standard'
+        elif intmode == 1:
+            mode = 'osu!taiko'
+        elif intmode == 2:
+            mode = 'osu!catch'
+        elif intmode == 3:
+            mode = 'osu!mania'
+        else:
+            mode = None
+        await p.send(glob.bot, f'Request #{request["id"]}: {request["requester"]} requested {request["type"]} {embed} to be {ns}. (Mode: {mode})')
     return f'All requests read.'
 
 @command(Privileges.Nominator)
@@ -635,7 +656,7 @@ async def _map(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         diff = f'[{p.last_np.version}]'
     else:
         diff = ''
-    embed.add_field(name = f'New {ns} map', value = f'{p.last_np.artist} - {p.last_np.title} {diff} is now {ns}', inline = True)
+    embed.add_field(name = f'New {ns} map', value = f'[{p.last_np.artist} - {p.last_np.title} {diff}](https://osu.ppy.sh/b/{p.last_np.id}) is now {ns}', inline = True)
     webhook.add_embed(embed)
     await webhook.post()
 
