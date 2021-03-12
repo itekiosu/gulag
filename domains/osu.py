@@ -343,6 +343,18 @@ async def lastFM(p: 'Player', conn: Connection) -> Optional[bytes]:
 
 USING_CHIMU = 'chimu.moe' in glob.config.mirror
 
+DIRECT_SET_INFO_FMTSTR = (
+    '{{{setid_spelling}}}.osz|{{Artist}}|{{Title}}|{{Creator}}|'
+    '{{RankedStatus}}|10.0|{{LastUpdate}}|{{{setid_spelling}}}|'
+    '0|0|0|0|0|{{diffs}}'# 0s are threadid, has_vid, has_story,
+                         #        filesize, filesize_novid.
+).format(setid_spelling='SetId' if USING_CHIMU else 'SetID')
+
+DIRECT_MAP_INFO_FMTSTR = (
+    '[{DifficultyRating:.2f}⭐] {DiffName} '
+    '{{CS{CS} OD{OD} AR{AR} HP{HP}}}@{Mode}'
+)
+
 @domain.route('/web/osu-search.php')
 @required_args({'u', 'h', 'r', 'q', 'm', 'p'})
 @get_login('u', 'h')
@@ -351,11 +363,15 @@ async def osuSearchHandler(p: 'Player', conn: Connection) -> Optional[bytes]:
         return (400, b'')
 
     if not glob.config.beatconnect_direct:
-        url = f'{glob.config.mirror}/api/search'
+        url = f'{glob.config.mirror}/search'
+        if conn.args['q'] in ['Top%2BRated', 'Top Rated', 'Newest', 'Most%2BPlayed', 'Most Played']:
+            qq = ''
+        else:
+            qq = conn.args['q']
         params = {
             'amount': 100,
             'offset': conn.args['p'],
-            'query': conn.args['q']
+            'query': qq
         }
 
         if conn.args['m'] != '-1':
@@ -364,13 +380,40 @@ async def osuSearchHandler(p: 'Player', conn: Connection) -> Optional[bytes]:
         if conn.args['r'] != '4': # 4 = all
             # convert to osu!api status
             status = RankedStatus.from_osudirect(int(conn.args['r']))
-            params |= {'status': status.osu_api}
+            if USING_CHIMU:
+                params |= {'rankedStatus': status.osu_api}
+            else:
+                params |= {'status': status.osu_api}
 
         async with glob.http.get(url, params = params) as resp:
-            if not resp or resp.status != 200:
-                return b'Failed to retrieve data from mirror!'
+            if not resp:
+                from utils.misc import point_of_interest
+                point_of_interest()
+            
+            if USING_CHIMU: # error handling varies | logging to console if debug as chimu support still isnt 100%
+                if glob.config.debug:
+                    log(f'Connection args: {conn.args}')
+                if resp.status == 404:
+                    if glob.config.debug:
+                        log(f'Error on chimu request: request = {resp.url}')
+                    return b'0' # no maps found
+                elif resp.status != 200:
+                    breakpoint()
+                    if glob.config.debug:
+                        log(f'Error on chimu request: request = {resp.url}')
+                if glob.config.debug:
+                    log(f'Successful chimu request: request = {resp.url}')
+            else: # cheesegull
+                if resp.status != 200:
+                    return b'Failed to retrieve data from mirror!'
 
             result = await resp.json()
+
+        if USING_CHIMU:
+            if result['code'] != 0:
+                breakpoint()
+                return b'Failed to retrieve data from mirror!'
+            result = result['data']
 
         lresult = len(result) # send over 100 if we receive
                             # 100 matches, so the client
@@ -379,22 +422,14 @@ async def osuSearchHandler(p: 'Player', conn: Connection) -> Optional[bytes]:
         diff_rating = lambda map: map['DifficultyRating']
 
         for bmap in result:
-            diffs = ','.join([
-                '[{DifficultyRating:.2f}⭐] {DiffName} '
-                '{{CS{CS} OD{OD} AR{AR} HP{HP}}}@{Mode}'.format(**row)
-                for row in sorted(bmap['ChildrenBeatmaps'], key = diff_rating)
-            ])
+            if bmap['ChildrenBeatmaps'] is None:
+                continue
 
-            if USING_CHIMU: 
-                sid = 'SetId'
-            else:
-                sid = 'SetID'
+            diff_sorted_maps = sorted(bmap['ChildrenBeatmaps'], key = diff_rating)
+            diffs_str = ','.join([DIRECT_MAP_INFO_FMTSTR.format(**row)
+                                for row in diff_sorted_maps])
 
-            ret.append(
-                '{sid}.osz|{Artist}|{Title}|{Creator}|'
-                '{RankedStatus}|10.0|{LastUpdate}|{sid}|' # TODO: rating
-                '0|0|0|0|0|{diffs}'.format(**bmap, diffs=diffs)
-            ) # 0s are threadid, has_vid, has_story, filesize, filesize_novid
+            ret.append(DIRECT_SET_INFO_FMTSTR.format(**bmap, diffs=diffs_str))
 
         return '\n'.join(ret).encode()
     else:
@@ -730,6 +765,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
 
         if s.rank == 1:
             # Announce the user's #1 score.
+            announce_chan = glob.channels['#announce']
             if s.mode in (GameMode.rx_std, GameMode.ap_std):
                 e = await glob.db.fetch(f'SELECT lb_pp FROM stats WHERE id = {s.player.id}')
                 if e['lb_pp'] == 1:
@@ -747,13 +783,13 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
             )
 
             if s.bmap.status in (RankedStatus.Ranked, RankedStatus.Approved):
-                performance = f'{s.pp:,.2f}pp'
+                performance = f'for {s.pp:,.2f}pp'
             else:
-                performance = f'{s.score:,} score'
+                performance = f'with {s.score:,} score'
             pembed = f'[https://osu.iteki.pw/u/{s.player.id} {s.player.name}]'
 
             ann = [f'{pembed} achieved #1 on {s.bmap.embed}',
-                    f'with {s.acc:.2f}% for {performance}.']
+                    f'with {s.acc:.2f}% {performance}.']
 
             if s.mods:
                 ann.insert(1, f'+{s.mods!r}')
