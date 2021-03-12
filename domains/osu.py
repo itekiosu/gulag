@@ -378,12 +378,8 @@ async def osuSearchHandler(p: 'Player', conn: Connection) -> Optional[bytes]:
             params |= {'mode': conn.args['m']}
 
         if conn.args['r'] != '4': # 4 = all
-            # convert to osu!api status
             status = RankedStatus.from_osudirect(int(conn.args['r']))
-            if USING_CHIMU:
-                params |= {'rankedStatus': status.osu_api}
-            else:
-                params |= {'status': status.osu_api}
+            params |= {'status': status.osu_api}
 
         async with glob.http.get(url, params = params) as resp:
             if not resp:
