@@ -505,7 +505,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
             '\nTo use this command you must first /np a map to Ruji (our bot) and you will then be able to request maps.'
             '\nThe choice between rank/love depends on whether you would like to request the map to be ranked or loved.\nThe map/set choices are depending on whether you want the entire set to be requested, or just the difficulty you did /np to.'
             '\n\nThats all you need to know for now.\nIf you have any issues please report them and have fun playing Iteki!\n\n',
-            p.id,
+            p.name,
             1
         )
 
