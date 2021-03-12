@@ -118,7 +118,7 @@ async def _link(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     if not check:
         return 'Please provide a valid verification code!'
     
-    await glob.db.execute('UPDATE discord SET user = {p.id} WHERE code = %s', [msg[0]])
+    await glob.db.execute('UPDATE discord SET user = %s WHERE code = %s', [p.id, msg[0]])
     return f'Account linked to {check["tag"]}!'
 
 @command(Privileges.Normal, hidden=True)
