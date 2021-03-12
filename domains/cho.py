@@ -494,10 +494,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     data += packets.banchoPrivileges(
         p.bancho_priv | ClientPrivileges.Supporter
     )
-    if not first_login:
-        data += packets.notification('Welcome back to Iteki!\n'
-                                    f'Current build: {glob.version}')
-    else:
+    if first_login:
         data += packets.sendMessage(
             'Ruji', 
             'Welcome to Iteki!\n\nIteki has a relatively unique experience from other servers as it is based on different source code and has many unique features.'
