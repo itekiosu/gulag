@@ -9,7 +9,7 @@ from enum import unique
 from cmyui import Ansi
 from cmyui import log
 
-from constants.gamemodes import GameMode
+from constants.gamemodes import GameMode, NPGameMode
 from constants.mods import Mods
 from objects import glob
 from utils.recalculator import PPCalculator
@@ -125,7 +125,7 @@ class Beatmap:
                  'artist', 'title', 'version', 'creator',
                  'status', 'last_update', 'total_length',
                  'frozen', 'plays', 'passes',
-                 'mode', 'bpm', 'cs', 'od', 'ar', 'hp',
+                 'mode', 'np_mode', 'bpm', 'cs', 'od', 'ar', 'hp',
                  'diff', 'pp_cache')
 
     def __init__(self, **kwargs):
@@ -147,6 +147,7 @@ class Beatmap:
         self.passes = kwargs.get('passes', 0)
 
         self.mode = GameMode(kwargs.get('mode', 0))
+        self.np_mode = NPGameMode.int_to_str(kwargs.get('mode', 0))
         self.bpm = kwargs.get('bpm', 0.0)
         self.cs = kwargs.get('cs', 0.0)
         self.od = kwargs.get('od', 0.0)

@@ -232,13 +232,13 @@ async def _req(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         diff = f'[{p.last_np.version}]'
     else:
         diff = ''
-    if 'std' in p.last_np.mode:
+    if 'std' in p.last_np.np_mode:
         mode = 'osu!standard'
-    elif 'taiko' in p.last_np.mode:
+    elif 'taiko' in p.last_np.np_mode:
         mode = 'osu!taiko'
-    elif 'catch' in p.last_np.mode:
+    elif 'catch' in p.last_np.np_mode:
         mode = 'osu!catch'
-    elif 'mania' in p.last_np.mode:
+    elif 'mania' in p.last_np.np_mode:
         mode = 'osu!mania'
     else:
         mode = None
@@ -2059,6 +2059,7 @@ async def process_commands(p: 'Player', t: Messageable,
                 t = m # send match for mp commands instead of chan
 
             trigger, *args = args # get subcommand
+            trigger = trigger.lower()
             commands = cmd_set.commands
             break
     else:
@@ -2072,7 +2073,7 @@ async def process_commands(p: 'Player', t: Messageable,
                 time_taken = (clock_ns() - start_time) / 1e6
 
                 return {
-                    'resp': f'{res} | Elapsed: {time_taken:.2f}ms',
+                    'resp': f'{res}',
                     'hidden': cmd.hidden
                 }
 

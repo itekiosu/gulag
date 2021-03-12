@@ -33,6 +33,33 @@ gm_sql = (
     'ap_std'
 )
 
+class NPGameMode:
+    vn_std   = 0
+    vn_taiko = 1
+    vn_catch = 2
+    vn_mania = 3
+
+    rx_std   = 4
+    rx_taiko = 5
+    rx_catch = 6
+
+    ap_std   = 7
+
+    @classmethod
+    def int_to_str(self, value: int):
+        """Converts int to str Lenforiee way."""
+
+        return {
+            self.vn_std: "vn!std",
+            self.vn_taiko: "vn!taiko",
+            self.vn_catch: "vn!catch",
+            self.vn_mania: "vn!mania",
+            self.rx_std: "rx!std",
+            self.rx_taiko: "rx!taiko",
+            self.rx_catch: "rx!catch",
+            self.ap_std: "ap!std"
+        }.get(value, "vn!std")
+
 @unique
 class GameMode(IntEnum):
     vn_std   = 0

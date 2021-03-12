@@ -341,6 +341,8 @@ async def lastFM(p: 'Player', conn: Connection) -> Optional[bytes]:
         pass
     """
 
+USING_CHIMU = 'chimu.moe' in glob.config.mirror
+
 @domain.route('/web/osu-search.php')
 @required_args({'u', 'h', 'r', 'q', 'm', 'p'})
 @get_login('u', 'h')
@@ -349,7 +351,7 @@ async def osuSearchHandler(p: 'Player', conn: Connection) -> Optional[bytes]:
         return (400, b'')
 
     if not glob.config.beatconnect_direct:
-        url = f'{glob.config.mirror_dl}/api/search'
+        url = f'{glob.config.mirror}/api/search'
         params = {
             'amount': 100,
             'offset': conn.args['p'],
@@ -383,9 +385,14 @@ async def osuSearchHandler(p: 'Player', conn: Connection) -> Optional[bytes]:
                 for row in sorted(bmap['ChildrenBeatmaps'], key = diff_rating)
             ])
 
+            if USING_CHIMU: 
+                sid = 'SetId'
+            else:
+                sid = 'SetID'
+
             ret.append(
-                '{SetID}.osz|{Artist}|{Title}|{Creator}|'
-                '{RankedStatus}|10.0|{LastUpdate}|{SetID}|' # TODO: rating
+                '{sid}.osz|{Artist}|{Title}|{Creator}|'
+                '{RankedStatus}|10.0|{LastUpdate}|{sid}|' # TODO: rating
                 '0|0|0|0|0|{diffs}'.format(**bmap, diffs=diffs)
             ) # 0s are threadid, has_vid, has_story, filesize, filesize_novid
 
@@ -718,6 +725,44 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         glob.datadog.increment('gulag.submitted_scores')
 
     if s.status == SubmissionStatus.BEST:
+        if glob.datadog:
+            glob.datadog.increment('gulag.submitted_scores_best')
+
+        if s.rank == 1:
+            # Announce the user's #1 score.
+            if s.mode in (GameMode.rx_std, GameMode.ap_std):
+                e = await glob.db.fetch(f'SELECT lb_pp FROM stats WHERE id = {s.player.id}')
+                if e['lb_pp'] == 1:
+                    scoring = 'pp'
+                else:
+                    scoring = 'score'
+            else:
+                scoring = 'score'
+            prev_n1 = await glob.db.fetch(
+                'SELECT u.id, name FROM users u '
+                f'LEFT JOIN {table} s ON u.id = s.userid '
+                'WHERE s.map_md5 = %s AND s.mode = %s '
+                f'AND s.status = 2 AND u.priv & 1 ORDER BY s.{scoring} DESC LIMIT 1, 1',
+                [s.bmap.md5, s.mode.as_vanilla]
+            )
+
+            if s.bmap.status in (RankedStatus.Ranked, RankedStatus.Approved):
+                performance = f'{s.pp:,.2f}pp'
+            else:
+                performance = f'{s.score:,} score'
+            pembed = f'[https://osu.iteki.pw/u/{s.player.id} {s.player.name}]'
+
+            ann = [f'{pembed} achieved #1 on {s.bmap.embed}',
+                    f'with {s.acc:.2f}% for {performance}.']
+
+            if s.mods:
+                ann.insert(1, f'+{s.mods!r}')
+
+            if prev_n1 and s.player.id != prev_n1['id']: # If there was previously a score on the map, add old #1.
+                ann.append('(Previous #1: [https://osu.iteki.pw/u/{id} {name}])'.format(**prev_n1))
+
+            await announce_chan.send(glob.bot, ' '.join(ann))
+
         # Our score is our best score.
         # Update any preexisting personal best
         # records with SubmissionStatus.SUBMITTED.
@@ -727,9 +772,6 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
             'AND userid = %s AND mode = %s',
             [s.bmap.md5, s.player.id, s.mode.as_vanilla]
         )
-
-        if glob.datadog:
-            glob.datadog.increment('gulag.submitted_scores_best')
 
     smr = to_readable(int(s.mods))
 
@@ -904,45 +946,6 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         'passes = %s WHERE md5 = %s',
         [s.bmap.plays, s.bmap.passes, s.bmap.md5]
     )
-
-    if (
-        s.status == SubmissionStatus.BEST and
-        s.rank == 1 and
-        (announce_chan := glob.channels['#announce'])
-    ):
-        # Announce the user's #1 score.
-        if s.mode in (GameMode.rx_std, GameMode.ap_std):
-            e = await glob.db.fetch(f'SELECT lb_pp FROM stats WHERE id = {s.player.id}')
-            if e['lb_pp'] == 1:
-                scoring = 'pp'
-            else:
-                scoring = 'score'
-        else:
-            scoring = 'score'
-        prev_n1 = await glob.db.fetch(
-            'SELECT u.id, name FROM users u '
-            f'LEFT JOIN {table} s ON u.id = s.userid '
-            'WHERE s.map_md5 = %s AND s.mode = %s '
-            f'AND s.status = 2 AND u.priv & 1 ORDER BY s.{scoring} DESC LIMIT 1, 1',
-            [s.bmap.md5, s.mode.as_vanilla]
-        )
-
-        if s.bmap.status in (RankedStatus.Ranked, RankedStatus.Approved):
-            performance = f'{s.pp:,.2f}pp'
-        else:
-            performance = f'{s.score:,} score'
-        pembed = f'[https://osu.iteki.pw/u/{s.player.id} {s.player.name}]'
-
-        ann = [f'{pembed} achieved #1 on {s.bmap.embed}',
-               f'with {s.acc:.2f}% for {performance}.']
-
-        if s.mods:
-            ann.insert(1, f'+{s.mods!r}')
-
-        if prev_n1 and s.player.id != prev_n1['id']: # If there was previously a score on the map, add old #1.
-            ann.append('(Previous #1: [https://osu.iteki.pw/u/{id} {name}])'.format(**prev_n1))
-
-        await announce_chan.send(glob.bot, ' '.join(ann))
 
     # Update the user.
     s.player.recent_scores[s.mode] = s
@@ -1375,8 +1378,22 @@ async def getScores(p: 'Player', conn: Connection) -> Optional[bytes]:
     res.append(f'{int(bmap.status)}|false|{bmap.id}|'
                f'{bmap.set_id}|{len(scores) if scores else 0}')
 
-    # offset, name, rating
-    res.append(f'0\n{bmap.full}\n10.0')
+    # fetch beatmap rating from sql
+    rating = (await glob.db.fetch(
+        'SELECT AVG(rating) rating '
+        'FROM ratings '
+        'WHERE map_md5 = %s',
+        [bmap.md5]
+    ))['rating']
+
+    if rating is not None:
+        rating = f'{rating:.1f}'
+    else:
+        rating = '10.0'
+
+    # TODO: we could have server-specific offsets for
+    # maps that mods could set for incorrectly timed maps.
+    res.append(f'0\n{bmap.full}\n{rating}') # offset, name, rating
 
     if not scores:
         # simply return an empty set.

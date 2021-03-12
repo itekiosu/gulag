@@ -58,9 +58,9 @@ beatconnect_direct = False
 beatconnect_dl = False
 bc_api_key = ''
 
-# the external mirror url to use. if you have beatconnect enabled, these will be used instead.
-mirror = 'https://storage.ripple.moe'
-mirror_dl = 'https://hentai.ninja'
+# the external mirror url to use. if you have beatconnect disabled, these will be used instead.
+mirror = 'https://chimu.moe'
+mirror_dl = 'https://osu.gatari.pw'
 
 """ customization """
 # the menu icon displayed on

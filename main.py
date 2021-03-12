@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 __all__ = ()
 
 # current version of gulag
-glob.version = cmyui.Version(3, 3, 1)
+glob.version = cmyui.Version(3, 3, 2)
 
 async def setup_collections() -> None:
     """Setup & cache many global collections (mostly from sql)."""
@@ -115,6 +115,13 @@ async def setup_collections() -> None:
         glob.gulag_maps = maps_res
     """
 
+async def after_serving() -> None:
+    """Called after the server stops serving connections."""
+    await glob.http.close()
+    await glob.db.close()
+
+    if glob.datadog:
+        glob.datadog.stop()
 
 async def before_serving() -> None:
     """Called before the server begins serving connections."""
@@ -334,6 +341,7 @@ if __name__ == '__main__':
         app.add_task(run_detections())
 
     app.before_serving = before_serving
+    app.after_serving = after_serving
 
     # support for https://datadoghq.com
     if all(glob.config.datadog.values()):
