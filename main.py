@@ -94,7 +94,7 @@ async def setup_collections() -> None:
 
     # global achievements (sorted by vn gamemodes)
     glob.achievements = {0: [], 1: [], 2: [], 3: []}
-    async for res in glob.db.iterall('SELECT * FROM achievements'):
+    async for res in glob.db.iterall('SELECT `id`, `file`, `name`, `desc`, `cond`, `mode` FROM achievements'):
         # NOTE: achievement conditions are stored as
         # stringified python expressions in the database
         # to allow for easy custom achievements.
