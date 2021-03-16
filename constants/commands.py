@@ -160,8 +160,8 @@ async def roll(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     return f'{p.name} rolls {points} points!'
 
 @command(Privileges.Normal)
-async def wysi(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
-    return f'727'
+async def _727(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
+    return '727'
 
 # TODO: prolly beatconnect
 @command(Privileges.Normal, aliases=['bc'])
