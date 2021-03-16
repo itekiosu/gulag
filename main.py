@@ -1,9 +1,19 @@
 #!/usr/bin/python3.9
 # -*- coding: utf-8 -*-
 
-import asyncio
 import lzma
 import os
+import sys
+import sys
+sys._excepthook = sys.excepthook # backup
+def _excepthook(type, value, traceback):
+    if type is KeyboardInterrupt:
+        print('\33[2K\r', end='Aborted startup.')
+        return
+    print('\x1b[0;31mgulag ran into an issue '
+          'before starting up :(\x1b[0m')
+    sys._excepthook(type, value, traceback)
+sys.excepthook = _excepthook
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -123,6 +133,8 @@ async def after_serving() -> None:
     if glob.datadog:
         glob.datadog.stop()
 
+nc = []
+
 async def before_serving() -> None:
     """Called before the server begins serving connections."""
     # retrieve a client session to use for http connections.
@@ -140,9 +152,6 @@ async def before_serving() -> None:
     # cache many global collections/objects from sql,
     # such as channels, mappools, clans, bot, etc.
     await setup_collections()
-
-    # setup a loop to kick inactive ghosted players.
-    loop = asyncio.get_running_loop()
 
     # add new donation ranks & enqueue tasks to remove current ones.
     # TODO: this system can get quite a bit better; rather than just
@@ -201,13 +210,11 @@ async def before_serving() -> None:
         'AND frozen = 1'
     )
 
-    loop = asyncio.get_running_loop()
-
     async for donation in glob.db.iterall(query, _dict=False):
-        loop.create_task(rm_donor(*donation))
+        nc.append(rm_donor(*donation))
 
     async for cheater in glob.db.iterall(query2, _dict=False):
-        loop.create_task(freeze_user(*cheater))
+        nc.append(freeze_user(*cheater))
 
 PING_TIMEOUT = 300000 // 1000
 async def disconnect_inactive() -> None:
@@ -333,12 +340,10 @@ if __name__ == '__main__':
     from domains.osu import domain as osu_domain # osu.ppy.sh
     from domains.ava import domain as ava_domain # a.ppy.sh
     app.add_domains({cho_domain, osu_domain, ava_domain})
-    app.add_tasks({disconnect_inactive()})
-
-    # if surveillance webhook is enabled,
-    # run our auto-detection 'thread' in bg.
-    if glob.config.webhooks['surveillance']:
-        app.add_task(run_detections())
+    nc.append(disconnect_inactive())
+    nc.append(run_detections())
+    for c in nc:
+        app.add_pending_task(c)
 
     app.before_serving = before_serving
     app.after_serving = after_serving
@@ -357,5 +362,5 @@ if __name__ == '__main__':
     else:
         glob.datadog = None
 
-    app.add_task(update_stats())
+    app.add_pending_task(update_stats())
     app.run(glob.config.server_addr) # blocking call
