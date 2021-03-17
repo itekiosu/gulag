@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Mar 03, 2021 at 05:58 PM
+-- Generation Time: Mar 17, 2021 at 07:45 PM
 -- Server version: 5.7.32-0ubuntu0.18.04.1
 -- PHP Version: 7.2.24-0ubuntu0.18.04.7
 
@@ -32,21 +32,8 @@ CREATE TABLE `achievements` (
   `name` varchar(128) CHARACTER SET utf8 NOT NULL,
   `desc` varchar(256) CHARACTER SET utf8 NOT NULL,
   `cond` varchar(256) NOT NULL,
-  `mode` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `beta_keys`
---
-
-CREATE TABLE `beta_keys` (
-  `beta_key` varchar(20) NOT NULL,
-  `used` int(1) NOT NULL DEFAULT '0',
-  `generated_by` varchar(200) NOT NULL,
-  `user` varchar(200) DEFAULT NULL,
-  `for_id` bigint(255) NOT NULL
+  `mode` tinyint(1) NOT NULL,
+  `custom` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -87,6 +74,7 @@ CREATE TABLE `clans` (
 
 CREATE TABLE `client_hashes` (
   `userid` int(11) NOT NULL,
+  `osuver` char(32) NOT NULL,
   `osupath` char(32) NOT NULL,
   `adapters` char(32) NOT NULL,
   `uninstall_id` char(32) NOT NULL,
@@ -520,7 +508,10 @@ CREATE TABLE `users` (
   `keygen` int(11) NOT NULL DEFAULT '0',
   `frozen` int(11) NOT NULL DEFAULT '0',
   `freezetime` int(11) NOT NULL DEFAULT '0',
-  `verified` int(1) NOT NULL DEFAULT '0'
+  `verified` int(1) NOT NULL DEFAULT '0',
+  `usedchange` int(11) NOT NULL DEFAULT '0',
+  `verif` int(1) NOT NULL,
+  `code` char(5) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -530,28 +521,6 @@ CREATE TABLE `users` (
 --
 
 CREATE TABLE `user_achievements` (
-  `userid` int(11) NOT NULL,
-  `achid` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `user_achievements_ap`
---
-
-CREATE TABLE `user_achievements_ap` (
-  `userid` int(11) NOT NULL,
-  `achid` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `user_achievements_rx`
---
-
-CREATE TABLE `user_achievements_rx` (
   `userid` int(11) NOT NULL,
   `achid` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -582,12 +551,6 @@ ALTER TABLE `achievements`
   ADD UNIQUE KEY `achievements_desc_uindex` (`desc`),
   ADD UNIQUE KEY `achievements_file_uindex` (`file`),
   ADD UNIQUE KEY `achievements_name_uindex` (`name`);
-
---
--- Indexes for table `beta_keys`
---
-ALTER TABLE `beta_keys`
-  ADD PRIMARY KEY (`beta_key`);
 
 --
 -- Indexes for table `channels`
@@ -756,18 +719,6 @@ ALTER TABLE `user_achievements`
   ADD PRIMARY KEY (`userid`,`achid`);
 
 --
--- Indexes for table `user_achievements_ap`
---
-ALTER TABLE `user_achievements_ap`
-  ADD PRIMARY KEY (`userid`,`achid`);
-
---
--- Indexes for table `user_achievements_rx`
---
-ALTER TABLE `user_achievements_rx`
-  ADD PRIMARY KEY (`userid`,`achid`);
-
---
 -- Indexes for table `user_hashes`
 --
 ALTER TABLE `user_hashes`
@@ -781,7 +732,7 @@ ALTER TABLE `user_hashes`
 -- AUTO_INCREMENT for table `achievements`
 --
 ALTER TABLE `achievements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=87;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=85;
 --
 -- AUTO_INCREMENT for table `channels`
 --
@@ -791,52 +742,52 @@ ALTER TABLE `channels`
 -- AUTO_INCREMENT for table `clans`
 --
 ALTER TABLE `clans`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 --
 -- AUTO_INCREMENT for table `comments`
 --
 ALTER TABLE `comments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 --
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
 --
 -- AUTO_INCREMENT for table `mail`
 --
 ALTER TABLE `mail`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2262;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2777;
 --
 -- AUTO_INCREMENT for table `requests`
 --
 ALTER TABLE `requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=98;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=107;
 --
 -- AUTO_INCREMENT for table `scores_ap`
 --
 ALTER TABLE `scores_ap`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=422;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=451;
 --
 -- AUTO_INCREMENT for table `scores_rx`
 --
 ALTER TABLE `scores_rx`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11980;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14344;
 --
 -- AUTO_INCREMENT for table `scores_vn`
 --
 ALTER TABLE `scores_vn`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15543;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17273;
 --
 -- AUTO_INCREMENT for table `startups`
 --
 ALTER TABLE `startups`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=515;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=609;
 --
 -- AUTO_INCREMENT for table `stats`
 --
 ALTER TABLE `stats`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=140;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=151;
 --
 -- AUTO_INCREMENT for table `tourney_pools`
 --
@@ -846,7 +797,7 @@ ALTER TABLE `tourney_pools`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=140;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=151;
 --
 -- AUTO_INCREMENT for table `user_hashes`
 --
