@@ -4,6 +4,8 @@ import asyncio
 import random
 import re
 import importlib
+import os
+import signal
 from collections import defaultdict
 from datetime import datetime
 from time import perf_counter_ns as clock_ns
@@ -924,6 +926,7 @@ async def alertu(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
 # The commands below are either dangerous or
 # simply not useful for any other roles.
 """
+
 @command(Privileges.Dangerous, aliases=['r'])
 async def reload(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     """Reload a Python module."""
