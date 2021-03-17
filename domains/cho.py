@@ -81,10 +81,7 @@ async def bancho_handler(conn: Connection) -> bytes:
         return resp
 
     # get the player from the specified osu token.
-    try:
-        player = await glob.players.get(token=conn.headers['osu-token'])
-    except:
-        return
+    player = await glob.players.get(token=conn.headers['osu-token'])
 
     if not player:
         # token was not found; changes are, we just restarted
@@ -356,6 +353,10 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         # no account by this name exists.
         return packets.userID(-1), 'no'
 
+    verif = await glob.db.fetch('SELECT verif, code FROM users WHERE safe_name = %s', [make_safe_name(username)])
+    if not int(verif['verif']) and not glob.config.keys:
+        return (packets.notification(f'You have not verified your account!\nIncase you need the instructions/code again, please do `!reg {verif["code"]}` in the Iteki Discord!\n\n(https://iteki.pw/discord is the invite link if you need it)') + packets.userID(-1)), 'no'
+
     # get our bcrypt cache.
     bcrypt_cache = glob.cache['bcrypt']
     pw_bcrypt = user_info['pw_bcrypt'].encode()
@@ -383,11 +384,11 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     # insert new set/occurrence.
     await glob.db.execute(
         'INSERT INTO client_hashes '
-        'VALUES (%s, %s, %s, %s, %s, NOW(), 0) '
+        'VALUES (%s, %s, %s, %s, %s, %s, NOW(), 0) '
         'ON DUPLICATE KEY UPDATE '
         'occurrences = occurrences + 1, '
         'latest_time = NOW() ',
-        [user_info['id'], *client_hashes]
+        [user_info['id'], s[0], *client_hashes]
     )
 
     # TODO: runningunderwine support
@@ -428,11 +429,18 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
                         packets.userID(-1)), 'no'
 
         else:
-            # player is verified
-            # TODO: add discord webhooks to cmyui_pkg, it would be a
-            # perfect addition here.. will have to think about how
-            # to organize it in config tho :o
-            pass
+            for a in hwid_matches:
+                matches_name = []
+                matches_name.append(a["name"])
+            webhook_url = glob.config.webhooks['audit-log']
+            webhook = Webhook(url=webhook_url)
+            embed = Embed(title = f'')
+            embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
+            thumb_url = f'https://a.{glob.config.domain}/1'
+            embed.set_thumbnail(url=thumb_url)
+            embed.add_field(name = 'New flagged user', value = f'{username} has been flagged for a HWID match ({client_hashes}) with user(s) {matches_name}', inline = True)
+            webhook.add_embed(embed)
+            await webhook.post()
 
     if first_login := not user_info['priv'] & Privileges.Verified:
         # verify the account if it's made it this far

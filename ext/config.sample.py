@@ -145,3 +145,6 @@ datadog = {
     'api_key': '',
     'app_key': ''
 }
+
+# whether you have the key system enabled (make sure this config value mirrors that of gulag-web)
+keys = False

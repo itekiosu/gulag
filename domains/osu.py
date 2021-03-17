@@ -4,6 +4,7 @@ import asyncio
 import copy
 import hashlib
 import random
+import string
 import re
 import time
 from collections import defaultdict
@@ -2275,7 +2276,8 @@ async def get_updated_beatmap(conn: Connection) -> Optional[bytes]:
 
 @domain.route('/users', methods=['POST'])
 async def register_account(conn: Connection) -> Optional[bytes]:
-    return (400, b'Please sign up on the website as we are currently key only!')
+    if glob.config.keys:
+        return (400, b'Please sign up on the website as we are currently key only!')
     mp_args = conn.multipart_args
 
     name = mp_args['user[username]']
@@ -2334,34 +2336,29 @@ async def register_account(conn: Connection) -> Optional[bytes]:
         return (400, orjson.dumps(errors_full))
 
     if mp_args['check'] == '0':
-        # the client isn't just checking values,
-        # they want to register the account now.
-        # make the md5 & bcrypt the md5 for sql.
-        async with glob.players._lock:
-            pw_md5 = hashlib.md5(pw_txt.encode()).hexdigest().encode()
-            pw_bcrypt = bcrypt.hashpw(pw_md5, bcrypt.gensalt())
-            glob.cache['bcrypt'][pw_bcrypt] = pw_md5 # cache result for login
+        pw_md5 = hashlib.md5(pw_txt.encode()).hexdigest().encode()
+        pw_bcrypt = bcrypt.hashpw(pw_md5, bcrypt.gensalt())
+        safe_name = name.lower().replace(' ', '_')
 
-            safe_name = name.lower().replace(' ', '_')
+        # add to `users` table to await verification + send notif to the user.
+        code = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))
+        user_id = await glob.db.execute(
+            'INSERT INTO users '
+            '(name, safe_name, email, pw_bcrypt, creation_time, latest_activity, verif, code) '
+            'VALUES (%s, %s, %s, %s, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 0, %s)',
+            [name, safe_name, email, pw_bcrypt, code]
+        )
 
-            # add to `users` table.
-            user_id = await glob.db.execute(
-                'INSERT INTO users '
-                '(name, safe_name, email, pw_bcrypt, creation_time, latest_activity) '
-                'VALUES (%s, %s, %s, %s, UNIX_TIMESTAMP(), UNIX_TIMESTAMP())',
-                [name, safe_name, email, pw_bcrypt]
-            )
-
-            # add to `stats` table.
-            await glob.db.execute(
-                'INSERT INTO stats '
-                '(id) VALUES (%s)',
-                [user_id]
-            )
-
+        # add to `stats` table.
+        await glob.db.execute(
+            'INSERT INTO stats '
+            '(id) VALUES (%s)',
+            [user_id]
+        )
         if glob.datadog:
             glob.datadog.increment('gulag.registrations')
 
         log(f'<{name} ({user_id})> has registered!', Ansi.LGREEN)
 
-    return b'ok' # success
+        verif = {'form_error': {'user': f'Your account has been registered!\n\nTo ensure no bots can abuse ingame registration we have a verification feature. Please join the Discord (https://iteki.pw/discord) and verify yourself by doing `!reg {code}` in #commands, then you will be verified!\nHave fun!'}}
+        return (400, orjson.dumps(verif))
