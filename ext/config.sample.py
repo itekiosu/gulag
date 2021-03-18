@@ -59,8 +59,7 @@ beatconnect_dl = False
 bc_api_key = ''
 
 # the external mirror url to use. if you have beatconnect disabled, these will be used instead.
-mirror = 'https://api.chimu.moe/v1'
-mirror_dl = 'https://osu.gatari.pw'
+mirror = 'https://api.chimu.moe'
 
 """ customization """
 # the menu icon displayed on
