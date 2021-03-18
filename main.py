@@ -326,8 +326,6 @@ if __name__ == '__main__':
         sys.exit('Please start your mysqld server.')
     if not os.path.exists('/var/run/nginx.pid'):
         sys.exit('Please start your nginx server.')
-                         
-    asyncio.set_debug(True)         
 
     # set cwd to /gulag.
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
