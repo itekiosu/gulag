@@ -343,14 +343,10 @@ async def lastFM(p: 'Player', conn: Connection) -> Optional[bytes]:
     """
 
 USING_CHIMU = 'chimu.moe' in glob.config.mirror
-
 DIRECT_SET_INFO_FMTSTR = (
-    '{{{setid_spelling}}}.osz|{{Artist}}|{{Title}}|{{Creator}}|'
-    '{{RankedStatus}}|10.0|{{LastUpdate}}|{{{setid_spelling}}}|'
-    '0|0|0|0|0|{{diffs}}'# 0s are threadid, has_vid, has_story,
-                         #        filesize, filesize_novid.
-).format(setid_spelling='SetId' if USING_CHIMU else 'SetID')
-
+    '{{SetID}}.osz|{{Artist}}|{{Title}}|{{Creator}}|'
+    '{{RankedStatus}}|10.0|{{LastUpdate}}|{{SetID}}|'
+    '0|0|0|0|0|{{diffs}}')
 DIRECT_MAP_INFO_FMTSTR = (
     '[{DifficultyRating:.2f}⭐] {DiffName} '
     '{{CS{CS} OD{OD} AR{AR} HP{HP}}}@{Mode}'
@@ -364,16 +360,18 @@ async def osuSearchHandler(p: 'Player', conn: Connection) -> Optional[bytes]:
         return (400, b'')
 
     if not glob.config.beatconnect_direct:
-        url = f'{glob.config.mirror}/search'
-        if conn.args['q'] in ['Top%2BRated', 'Top Rated', 'Newest', 'Most%2BPlayed', 'Most Played']:
-            qq = ''
+        if not USING_CHIMU:
+            url = f'{glob.config.mirror}/search'
         else:
-            qq = conn.args['q']
+            url = 'https://api.chimu.moe/cheesegull/search'
+
         params = {
             'amount': 100,
             'offset': conn.args['p'],
-            'query': qq
         }
+
+        if not conn.args['q'] in ['Top%2BRated', 'Top Rated', 'Newest', 'Most%2BPlayed', 'Most Played']:
+            params['query'] = conn.args['q']
 
         if conn.args['m'] != '-1':
             params |= {'mode': conn.args['m']}
@@ -387,30 +385,15 @@ async def osuSearchHandler(p: 'Player', conn: Connection) -> Optional[bytes]:
                 from utils.misc import point_of_interest
                 point_of_interest()
             
-            if USING_CHIMU: # error handling varies | logging to console if debug as chimu support still isnt 100%
-                if glob.config.debug:
-                    log(f'Connection args: {conn.args}')
-                if resp.status == 404:
-                    if glob.config.debug:
-                        log(f'Error on chimu request: request = {resp.url}')
-                    return b'0' # no maps found
-                elif resp.status != 200:
-                    breakpoint()
-                    if glob.config.debug:
-                        log(f'Error on chimu request: request = {resp.url}')
-                if glob.config.debug:
-                    log(f'Successful chimu request: request = {resp.url}')
-            else: # cheesegull
-                if resp.status != 200:
-                    return b'Failed to retrieve data from mirror!'
+            if resp.status != 200:
+                return b'Failed to retrieve data from mirror!'
 
             result = await resp.json()
-
-        if USING_CHIMU:
-            if result['code'] != 0:
-                breakpoint()
-                return b'Failed to retrieve data from mirror!'
-            result = result['data']
+            log(params)
+            log(url)
+            log(resp.status)
+            log(resp.url)
+            #log(result)
 
         lresult = len(result) # send over 100 if we receive
                             # 100 matches, so the client
@@ -2230,7 +2213,7 @@ async def get_screenshot(conn: Connection) -> Optional[bytes]:
 async def get_osz(conn: Connection) -> Optional[bytes]:
     """Handle a map download request (osu.ppy.sh/d/*)."""
     if not glob.config.beatconnect_dl:
-        mirror_url = f'{glob.config.mirror_dl}/d/{conn.path[3:]}'
+        mirror_url = f'{glob.config.mirror}/d/{conn.path[3:]}'
     else:
         mirror_url = f'https://beatconnect.io/b/{conn.path[3:]}'
     conn.add_resp_header(f'Location: {mirror_url}')

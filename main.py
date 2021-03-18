@@ -363,4 +363,4 @@ if __name__ == '__main__':
         glob.datadog = None
 
     app.add_pending_task(update_stats())
-    app.run(glob.config.server_addr) # blocking call
+    app.run(glob.config.server_addr, handle_signals=True, sigusr1_restart=True) # blocking call

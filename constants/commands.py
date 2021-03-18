@@ -927,6 +927,12 @@ async def alertu(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
 # simply not useful for any other roles.
 """
 
+@command(Privileges.Dangerous)
+async def restart(p: 'Player', c: Messageable, msg: Sequence[str]):
+    await p.send(glob.bot, 'Restarting server...')
+    os.kill(os.getpid(), signal.SIGUSR1)
+    await p.send(glob.bot, 'Server restarted!')
+
 @command(Privileges.Dangerous, aliases=['r'])
 async def reload(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     """Reload a Python module."""
