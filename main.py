@@ -321,6 +321,12 @@ async def update_stats():
         await glob.db.execute(f'UPDATE server_stats SET total = {total_users}')
 
 if __name__ == '__main__':
+    # make sure nginx & mysqld are running.
+    if not os.path.exists('/var/run/mysqld/mysqld.pid'):
+        sys.exit('Please start your mysqld server.')
+    if not os.path.exists('/var/run/nginx.pid'):
+        sys.exit('Please start your nginx server.')
+
     # set cwd to /gulag.
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
