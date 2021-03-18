@@ -370,8 +370,10 @@ async def osuSearchHandler(p: 'Player', conn: Connection) -> Optional[bytes]:
             'offset': conn.args['p'],
         }
 
-        if not conn.args['q'] in ['Top%2BRated', 'Top Rated', 'Newest', 'Most%2BPlayed', 'Most Played']:
-            params['query'] = conn.args['q']
+        if conn.args['q'] not in ['Newest', 'Top+Rated', 'Most+Played', 'Most Played', 'Most%20Played', 'Most%2BPlayed', 'Top Rated', 'Top%20Rated', 'Top%2BRated']:
+            params['query'] = conn.args['q'].replace('+', ' ')
+        else:
+            params['query'] = ''
 
         if conn.args['m'] != '-1':
             params |= {'mode': conn.args['m']}
@@ -385,15 +387,16 @@ async def osuSearchHandler(p: 'Player', conn: Connection) -> Optional[bytes]:
                 from utils.misc import point_of_interest
                 point_of_interest()
             
-            if resp.status != 200:
-                return b'Failed to retrieve data from mirror!'
+            if USING_CHIMU:
+                if resp.status == 404:
+                    return b'0'
+                elif resp.status != 200:
+                    return b'0'
+            else:
+                if resp.status != 200:
+                    return b'Failed to retrieve data from mirror!'
 
             result = await resp.json()
-            log(params)
-            log(url)
-            log(resp.status)
-            log(resp.url)
-            #log(result)
 
         lresult = len(result) # send over 100 if we receive
                             # 100 matches, so the client
@@ -820,13 +823,14 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
                 Ansi.LRED)
 
             #await s.player.ban(glob.bot, f'[{s.mode!r}] autoban @ {s.pp:.2f}')
-            webhook_url = glob.config.webhooks['audit-log']
-            webhook = Webhook(url=webhook_url)
-            embed = Embed(title = f'')
-            embed.set_author(url = f"https://iteki.pw/u/1", name = 'Anticheat', icon_url = f"https://a.iteki.pw/1")
-            embed.add_field(name = 'New flagged user', value = f'{s.player} has been flagged for [{s.mode!r}] autoflag @ {s.pp:.2f}pp.', inline = True)
-            webhook.add_embed(embed)
-            await webhook.post()
+            if s.mode.as_vanilla == 0:
+                webhook_url = glob.config.webhooks['audit-log']
+                webhook = Webhook(url=webhook_url)
+                embed = Embed(title = f'')
+                embed.set_author(url = f"https://iteki.pw/u/1", name = 'Anticheat', icon_url = f"https://a.iteki.pw/1")
+                embed.add_field(name = 'New flagged user', value = f'{s.player} has been flagged for [{s.mode!r}] autoflag @ {s.pp:.2f}pp.', inline = True)
+                webhook.add_embed(embed)
+                await webhook.post()
             #return b'error: ban'
     
     e = await glob.db.fetch(f'SELECT verified FROM users WHERE id = {s.player.id}')
@@ -837,7 +841,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
     else:
         bypass = False
         
-    if s.pp > 400 and not bypass and not s.mods & Mods.RELAX:
+    if s.pp > 400 and not bypass and not s.mods & Mods.RELAX and s.mode.as_vanilla == 0:
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
@@ -846,7 +850,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         webhook.add_embed(embed)
         await webhook.post()
     
-    if s.pp > 500 and not bypass and not s.mods & Mods.RELAX:
+    if s.pp > 500 and not bypass and not s.mods & Mods.RELAX and s.mode.as_vanilla == 0:
         log(f'{s.player} frozen for submitting '
             f'{s.pp:.2f} score on gm {s.mode!r}.',
             Ansi.LRED)
@@ -858,7 +862,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         webhook.add_embed(embed)
         await webhook.post()
         await s.player.freeze(glob.bot, f'set 500pp+ play without being verified (Autofreeze).' )
-    elif s.pp > 600 and int(e['verified']) and not s.mods & Mods.RELAX:
+    elif s.pp > 600 and int(e['verified']) and not s.mods & Mods.RELAX and s.mode.as_vanilla == 0:
         log(f'{s.player} frozen for submitting '
             f'{s.pp:.2f} score on gm {s.mode!r}.',
             Ansi.LRED)
@@ -2213,7 +2217,10 @@ async def get_screenshot(conn: Connection) -> Optional[bytes]:
 async def get_osz(conn: Connection) -> Optional[bytes]:
     """Handle a map download request (osu.ppy.sh/d/*)."""
     if not glob.config.beatconnect_dl:
-        mirror_url = f'{glob.config.mirror}/d/{conn.path[3:]}'
+        if not USING_CHIMU:
+            mirror_url = f'{glob.config.mirror}/d/{conn.path[3:]}'
+        else:
+            mirror_url = f'https://chimu.moe/d/{conn.path[3:]}'
     else:
         mirror_url = f'https://beatconnect.io/b/{conn.path[3:]}'
     conn.add_resp_header(f'Location: {mirror_url}')

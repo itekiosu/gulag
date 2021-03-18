@@ -331,12 +331,11 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     # [4]: md5(uniqueid2) (disk signature/serial num)
     client_hashes = s[3].split(':')[:-1]
     client_hashes.pop(1) # no need for non-md5 adapters
-    if not glob.config.debug:
-        if client_hashes in ("f11423b10398dfbd7d460ab49615e997", "0d9a67a7d3ba6cd75a4f496c9898c59d"):
-            if not (t := await glob.players.get(name=username, sql=True)):
-                return f'"{username}" not found.'
-            reason = 'Cheat client found.'
-            await t.ban(p, reason)
+    if client_hashes in ("f11423b10398dfbd7d460ab49615e997", "0d9a67a7d3ba6cd75a4f496c9898c59d"):
+        if not (t := await glob.players.get(name=username, sql=True)):
+            return f'"{username}" not found.'
+        reason = 'Cheat client found.'
+        await t.ban(p, reason)
 
     del p
 
@@ -384,11 +383,11 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     # insert new set/occurrence.
     await glob.db.execute(
         'INSERT INTO client_hashes '
-        'VALUES (%s, %s, %s, %s, %s, %s, NOW(), 0) '
+        'VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), 0) '
         'ON DUPLICATE KEY UPDATE '
         'occurrences = occurrences + 1, '
         'latest_time = NOW() ',
-        [user_info['id'], s[0], *client_hashes]
+        [user_info['id'], s[0], ip, *client_hashes]
     )
 
     # TODO: runningunderwine support
@@ -399,8 +398,8 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         'FROM `client_hashes` h '
         'INNER JOIN `users` u ON h.`userid` = u.`id` '
         'WHERE h.`userid` != %s AND (h.`adapters` = %s '
-        'OR h.`uninstall_id` = %s OR h.`disk_serial` = %s)',
-        [user_info['id'], *client_hashes[1:]]
+        'OR h.`uninstall_id` = %s OR h.`disk_serial` = %s OR h.`ip` = %s)',
+        [user_info['id'], *client_hashes[1:], ip]
     )
 
     if hwid_matches:
@@ -438,7 +437,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
             embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
             thumb_url = f'https://a.{glob.config.domain}/1'
             embed.set_thumbnail(url=thumb_url)
-            embed.add_field(name = 'New flagged user', value = f'{username} has been flagged for a HWID match ({client_hashes}) with user(s) {matches_name}', inline = True)
+            embed.add_field(name = 'New flagged user', value = f'{username} has been flagged for a HWID/IP match ({client_hashes}) with user(s) {matches_name}', inline = True)
             webhook.add_embed(embed)
             await webhook.post()
 
