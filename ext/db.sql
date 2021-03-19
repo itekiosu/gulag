@@ -9,6 +9,24 @@ SET time_zone = "+00:00";
 
 -- --------------------------------------------------------
 
+--
+-- Table structure for table `server_stats`
+--
+
+CREATE TABLE `server_stats` (
+  `online` int(100) NOT NULL DEFAULT '0',
+  `total` int(100) NOT NULL DEFAULT '0',
+  `unsupver` text NOT NULL,
+  `banver` text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `server_stats`
+--
+
+INSERT INTO `server_stats` (`online`, `total`, `unsupver`, `banver`) VALUES
+(0, 0, '', '');
+
 CREATE TABLE `tourney_pool_maps` (
   `map_id` int(11) NOT NULL,
   `pool_id` int(11) NOT NULL,
