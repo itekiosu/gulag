@@ -10,6 +10,17 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `tourney_pools`
+--
+
+CREATE TABLE `tourney_pools` (
+  `id` int(11) NOT NULL,
+  `name` varchar(16) NOT NULL,
+  `created_at` datetime NOT NULL,
+  `created_by` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
 -- Table structure for table `achievements`
 --
 
