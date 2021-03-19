@@ -5,10 +5,11 @@ from pathlib import Path
 from typing import Optional
 from cmyui import Connection
 from cmyui import Domain
+from objects import glob
 
 """ ava: avatar server (for both ingame & external) """
 
-domain = Domain('a.iteki.pw')
+domain = Domain(f'a.{glob.config.domain}')
 
 AVATARS_PATH = Path.cwd() / '.data/avatars'
 DEFAULT_AVATAR = AVATARS_PATH / 'default.png'

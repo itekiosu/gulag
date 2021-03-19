@@ -47,7 +47,8 @@ if TYPE_CHECKING:
 
 """ osu: handle connections from web, api, and beyond? """
 
-domain = Domain(re.compile('iteki\.pw|osu\.iteki\.pw'))
+BASE_DOMAIN = glob.config.domain
+domain = Domain({f'osu.{BASE_DOMAIN}'})
 
 
 class Mods(IntEnum):
@@ -769,7 +770,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
                 performance = f'for {s.pp:,.2f}pp'
             else:
                 performance = f'with {s.score:,} score'
-            pembed = f'[https://osu.iteki.pw/u/{s.player.id} {s.player.name}]'
+            pembed = f'[https://{BASE_DOMAIN}/u/{s.player.id} {s.player.name}]'
 
             ann = [f'{pembed} achieved #1 on {s.bmap.embed}',
                     f'with {s.acc:.2f}% {performance}.']
@@ -778,7 +779,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
                 ann.insert(1, f'+{s.mods!r}')
 
             if prev_n1 and s.player.id != prev_n1['id']: # If there was previously a score on the map, add old #1.
-                ann.append('(Previous #1: [https://osu.iteki.pw/u/{id} {name}])'.format(**prev_n1))
+                ann.append('(Previous #1: [https://{BASE_DOMAIN}/u/{id} {name}])'.format(BASE_DOMAIN, **prev_n1))
 
             await announce_chan.send(glob.bot, ' '.join(ann))
 
