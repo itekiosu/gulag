@@ -9,6 +9,13 @@ SET time_zone = "+00:00";
 
 -- --------------------------------------------------------
 
+CREATE TABLE `tourney_pool_maps` (
+  `map_id` int(11) NOT NULL,
+  `pool_id` int(11) NOT NULL,
+  `mods` int(11) NOT NULL,
+  `slot` tinyint(4) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
 --
 -- Table structure for table `tourney_pools`
 --
