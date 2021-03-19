@@ -3,7 +3,7 @@
 # this file is for management of gulag version updates;
 # it will automatically keep track of your running version,
 # and when it detects a change, it will apply any nescessary
-# changes to your sql database & keep cmyui_pkg up to date.
+# & keep cmyui_pkg up to date.
 
 import asyncio
 import re
