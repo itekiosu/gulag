@@ -823,7 +823,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
                 Ansi.LRED)
 
             #await s.player.ban(glob.bot, f'[{s.mode!r}] autoban @ {s.pp:.2f}')
-            if s.mode.as_vanilla == 0:
+            if s.mode == 0:
                 webhook_url = glob.config.webhooks['audit-log']
                 webhook = Webhook(url=webhook_url)
                 embed = Embed(title = f'')
@@ -841,7 +841,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
     else:
         bypass = False
         
-    if s.pp > 400 and not bypass and not s.mods & Mods.RELAX and s.mode.as_vanilla == 0:
+    if s.pp > 400 and not bypass and not s.mods & Mods.RELAX and s.mode == 0 and s.passed:
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
@@ -850,7 +850,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         webhook.add_embed(embed)
         await webhook.post()
     
-    if s.pp > 500 and not bypass and not s.mods & Mods.RELAX and s.mode.as_vanilla == 0:
+    if s.pp > 500 and not bypass and not s.mods & Mods.RELAX and s.mode == 0 and s.passed:
         log(f'{s.player} frozen for submitting '
             f'{s.pp:.2f} score on gm {s.mode!r}.',
             Ansi.LRED)
@@ -862,7 +862,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         webhook.add_embed(embed)
         await webhook.post()
         await s.player.freeze(glob.bot, f'set 500pp+ play without being verified (Autofreeze).' )
-    elif s.pp > 600 and int(e['verified']) and not s.mods & Mods.RELAX and s.mode.as_vanilla == 0:
+    elif s.pp > 600 and int(e['verified']) and not s.mods & Mods.RELAX and s.mode == 0 and s.passed:
         log(f'{s.player} frozen for submitting '
             f'{s.pp:.2f} score on gm {s.mode!r}.',
             Ansi.LRED)
