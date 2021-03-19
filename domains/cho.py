@@ -296,7 +296,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
 
     if s[0] in unsupvers:
         data = packets.userID(-1) + \
-                packets.notification('Iteki Client is now unsupported. Please join our Discord (https://iteki.pw/discord) for further instructions on how to connect.')
+                packets.notification(f'Iteki Client is now unsupported. Please join our Discord (https://{glob.config.domain}/discord) for further instructions on how to connect.')
 
         return data, 'no'
 
@@ -356,7 +356,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
 
     verif = await glob.db.fetch('SELECT verif, code FROM users WHERE safe_name = %s', [make_safe_name(username)])
     if not int(verif['verif']) and not glob.config.keys:
-        return (packets.notification(f'You have not verified your account!\nIncase you need the instructions/code again, please do `!reg {verif["code"]}` in the Iteki Discord!\n\n(https://iteki.pw/discord is the invite link if you need it)') + packets.userID(-1)), 'no'
+        return (packets.notification(f'You have not verified your account!\nIncase you need the instructions/code again, please do `!reg {verif["code"]}` in the Discord!\n\n(https://{glob.config.domain}/discord is the invite link if you need it)') + packets.userID(-1)), 'no'
 
     # get our bcrypt cache.
     bcrypt_cache = glob.cache['bcrypt']
@@ -523,27 +523,12 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     if int(user_info['frozen']) == 1:
         if dt.now().timestamp() > user_info['freezetime']:
             return (packets.notification('You are banned as a result of not providing a liveplay.') + packets.userID(-1)), 'no'
-            # user still frozen and their timer has passed // below code commented as bg loops now handle this process
-            # if not (t := await glob.players.get(name=username, sql=True)):
-            #     return f'"{username}" not found.'
-            # reason = 'Freeze timer passed.'
-            # await t.ban(p, reason)
-            # await glob.db.execute(f'UPDATE users SET frozen = 0 WHERE id = {user_info["id"]}')
-            # webhook_url = glob.config.webhooks['audit-log']
-            # webhook = Webhook(url=webhook_url)
-            # embed = Embed(title = f'')
-            # embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
-            # thumb_url = f'https://a.{glob.config.domain}/1'
-            # embed.set_thumbnail(url=thumb_url)
-            # embed.add_field(name = 'New banned user', value = f'{username} has been banned as their freeze timer has passed.', inline = True)
-            # webhook.add_embed(embed)
-            # await webhook.post()
         else:
             # timer hasnt passed, alert user they are frozen
             data += packets.notification(
                 f'Your account is currently frozen!\n\n'
                 'This means you have 7 days to create a valid liveplay to avoid a ban.\n'
-                'Please message tsunyoku#8551 on Discord (If you need to join the Iteki discord: https://iteki.pw/discord) to be given the liveplay criteria you will be expected to meet.\n\n'
+                'Please message tsunyoku#8551 on Discord (If you need to join the Discord: https://{glob.config.domain}/discord) to be given the liveplay criteria you will be expected to meet.\n\n'
                 'Once a valid liveplay is provided, your account will be unfrozen!'
             )
 

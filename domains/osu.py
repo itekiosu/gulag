@@ -779,7 +779,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
                 ann.insert(1, f'+{s.mods!r}')
 
             if prev_n1 and s.player.id != prev_n1['id']: # If there was previously a score on the map, add old #1.
-                ann.append('(Previous #1: [https://{BASE_DOMAIN}/u/{id} {name}])'.format(BASE_DOMAIN, **prev_n1))
+                ann.append('(Previous #1: [https://{}/u/{id} {name}])'.format(BASE_DOMAIN, **prev_n1))
 
             await announce_chan.send(glob.bot, ' '.join(ann))
 
@@ -828,7 +828,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
                 webhook_url = glob.config.webhooks['audit-log']
                 webhook = Webhook(url=webhook_url)
                 embed = Embed(title = f'')
-                embed.set_author(url = f"https://iteki.pw/u/1", name = 'Anticheat', icon_url = f"https://a.iteki.pw/1")
+                embed.set_author(url = f"https://{glob.config.domain}/u/1", name = 'Anticheat', icon_url = f"https://a.{glob.config.domain}/1")
                 embed.add_field(name = 'New flagged user', value = f'{s.player} has been flagged for [{s.mode!r}] autoflag @ {s.pp:.2f}pp.', inline = True)
                 webhook.add_embed(embed)
                 await webhook.post()
@@ -846,7 +846,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
-        embed.set_author(url = f"https://iteki.pw/u/1", name = 'Anticheat', icon_url = f"https://a.iteki.pw/1")
+        embed.set_author(url = f"https://{glob.config.domain}/u/1", name = 'Anticheat', icon_url = f"https://a.{glob.config.domain}/1")
         embed.add_field(name = 'High pp play', value = f"{s.player} set a play above 400pp. No action has been taken as this isn't too high.\n\nThis webhook acts to send any 'high' pp play to make it easy to track potential cheaters", inline = True)
         webhook.add_embed(embed)
         await webhook.post()
@@ -858,7 +858,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
-        embed.set_author(url = f"https://iteki.pw/u/1", name = 'Anticheat', icon_url = f"https://a.iteki.pw/1")
+        embed.set_author(url = f"https://{glob.config.domain}/u/1", name = 'Anticheat', icon_url = f"https://a.{glob.config.domain}/1")
         embed.add_field(name = 'New frozen user', value = f"{s.player} set a play above 500pp. This user has been auto-frozen as a result!", inline = True)
         webhook.add_embed(embed)
         await webhook.post()
@@ -870,7 +870,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
-        embed.set_author(url = f"https://iteki.pw/u/1", name = 'Anticheat', icon_url = f"https://a.iteki.pw/1")
+        embed.set_author(url = f"https://{glob.config.domain}/u/1", name = 'Anticheat', icon_url = f"https://a.{glob.config.domain}/1")
         embed.add_field(name = 'New frozen user', value = f"{s.player} set a play above 600pp while verified. This user has been auto-frozen as a result!", inline = True)
         webhook.add_embed(embed)
         await webhook.post()
@@ -2351,5 +2351,5 @@ async def register_account(conn: Connection) -> Optional[bytes]:
 
         log(f'<{name} ({user_id})> has registered!', Ansi.LGREEN)
 
-        verif = {'form_error': {'user': f'Your account has been registered!\n\nTo ensure no bots can abuse ingame registration we have a verification feature. Please join the Discord (https://iteki.pw/discord) and verify yourself by doing `!reg {code}` in #commands, then you will be verified!\nHave fun!'}}
+        verif = {'form_error': {'user': f'Your account has been registered!\n\nTo ensure no bots can abuse ingame registration we have a verification feature. Please join the Discord (https://{glob.config.domain}/discord) and verify yourself by doing `!reg {code}` in #commands, then you will be verified!\nHave fun!'}}
         return (400, orjson.dumps(verif))

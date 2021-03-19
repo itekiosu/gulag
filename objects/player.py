@@ -411,7 +411,7 @@ class Player:
             self.enqueue(packets.notification(
                 f'Your account has been frozen by {admin.name} for reason {reason}\n\n'
                 'This means you have 7 days to create a valid liveplay to avoid a ban.\n'
-                'Please message tsunyoku#8551 on Discord (If you need to join the Iteki discord: https://iteki.pw/discord) to be given the liveplay criteria you will be expected to meet.\n\n'
+                f'Please message tsunyoku#8551 on Discord (If you need to join the Discord: https://{glob.config.domain}/discord) to be given the liveplay criteria you will be expected to meet.\n\n'
                 'Once a valid liveplay is provided, your account will be unfrozen!'
             ))
 
