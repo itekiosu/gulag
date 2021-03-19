@@ -24,6 +24,18 @@ CREATE TABLE `achievements` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
+-- Table structure for table `startups`
+--
+
+CREATE TABLE `startups` (
+  `id` int(11) NOT NULL,
+  `ver_major` tinyint(4) NOT NULL,
+  `ver_minor` tinyint(4) NOT NULL,
+  `ver_micro` tinyint(4) NOT NULL,
+  `datetime` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
 -- Dumping data for table `achievements`
 --
 
