@@ -37,7 +37,6 @@ class Updater:
             prev_ver = self.version
 
         await self._update_cmyui() # pip install -U cmyui
-        await self._update_sql(prev_ver)
 
     @staticmethod
     async def get_prev_version() -> Optional[Version]:
@@ -85,57 +84,3 @@ class Updater:
             log(f'Updating cmyui_pkg (v{module_ver!r} -> '
                                     f'v{latest_ver!r}).', Ansi.MAGENTA)
             pip_main(['install', '-Uq', 'cmyui']) # Update quiet
-
-    async def _update_sql(self, prev_version: Version) -> None:
-        """Apply any structural changes to the database since the last startup."""
-        if self.version == prev_version:
-            # already up to date.
-            return
-
-        # version changed; there may be sql changes.
-        content = SQL_UPDATES_FILE.read_text()
-
-        updates = []
-        current_ver = None
-
-        for line in content.splitlines():
-            if line.startswith('#') or not current_ver:
-                # may be normal comment or new version
-                if rgx := re.fullmatch(r'^# v(?P<ver>\d+\.\d+\.\d+)$', line):
-                    current_ver = Version.from_str(rgx['ver'])
-
-                continue
-
-            # we only need the updates between the
-            # previous and new version of the server.
-            if prev_version < current_ver <= self.version:
-                updates.append(line)
-
-        if not updates:
-            return
-
-        log(f'Updating sql (v{prev_version!r} -> '
-                          f'v{self.version!r}).', Ansi.MAGENTA)
-
-        sql_lock = asyncio.Lock()
-
-        # TODO: sql transaction? for rollback
-        async with sql_lock:
-            for query in updates:
-                try:
-                    await glob.db.execute(query)
-                except:
-                    # if anything goes wrong while writing a query,
-                    # most likely something is very wrong.
-                    log(f'Failed: {query}', Ansi.GRAY)
-                    log("SQL failed to update - unless you've been modifying sql and "
-                        "know what caused this, please please contact cmyui#0425.", Ansi.LRED)
-
-                    input('Press enter to exit')
-
-                    await glob.http.close()
-                    await glob.db.close()
-
-                    raise
-
-    # TODO _update_config?
