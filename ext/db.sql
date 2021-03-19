@@ -7,10 +7,6 @@ SET time_zone = "+00:00";
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
 
---
--- Database: `gulagtest`
---
-
 -- --------------------------------------------------------
 
 --
@@ -444,6 +440,33 @@ CREATE TABLE `scores_vn` (
   `userid` int(11) NOT NULL,
   `perfect` tinyint(1) NOT NULL,
   `mods_readable` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Table structure for table `users`
+--
+
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL,
+  `name` varchar(32) CHARACTER SET utf8 NOT NULL,
+  `safe_name` varchar(32) CHARACTER SET utf8 NOT NULL,
+  `email` varchar(254) NOT NULL,
+  `priv` int(11) NOT NULL DEFAULT '1',
+  `pw_bcrypt` char(60) NOT NULL,
+  `country` char(2) NOT NULL DEFAULT 'xx',
+  `silence_end` int(11) NOT NULL DEFAULT '0',
+  `donor_end` int(11) NOT NULL DEFAULT '0',
+  `creation_time` int(11) NOT NULL DEFAULT '0',
+  `latest_activity` int(11) NOT NULL DEFAULT '0',
+  `clan_id` int(11) NOT NULL DEFAULT '0',
+  `clan_rank` tinyint(1) NOT NULL DEFAULT '0',
+  `keygen` int(11) NOT NULL DEFAULT '0',
+  `frozen` int(11) NOT NULL DEFAULT '0',
+  `freezetime` int(11) NOT NULL DEFAULT '0',
+  `verified` int(1) NOT NULL DEFAULT '0',
+  `usedchange` int(11) NOT NULL DEFAULT '0',
+  `verif` int(1) NOT NULL,
+  `code` char(5) NOT NULL DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
