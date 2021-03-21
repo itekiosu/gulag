@@ -19,18 +19,17 @@ BEATMAPS_PATH = Path.cwd() / '.data/osu'
 
 class PPCalculator:
     """Asynchronously wraps the process of calculating difficulty in osu!."""
-    def __init__(self, map_id: int, **kwargs) -> None:
+    def __init__(self, map_id: int, **pp_attrs) -> None:
         # NOTE: this constructor should not be called
         # unless you are CERTAIN the map is on disk
         # for normal usage, use the classmethods
         self.file = f'.data/osu/{map_id}.osu'
+        self.pp_attrs = pp_attrs
 
-        self.mods = kwargs.get('mods', Mods.NOMOD)
-        self.score = kwargs.get('score', 0)
-        self.combo = kwargs.get('combo', 0)
-        self.nmiss = kwargs.get('nmiss', 0)
-        self.mode = kwargs.get('mode', GameMode.vn_std)
-        self.acc = kwargs.get('acc', 100.00)
+        if 'mode_vn' in pp_attrs:
+            self.mode_vn = ppattrs['mode_vn']
+        else:
+            self.mode_vn = 0
 
     @staticmethod
     async def get_from_osuapi(map_id: int, dest_path: Path) -> bool:
@@ -62,18 +61,18 @@ class PPCalculator:
         return path
 
     @classmethod
-    async def from_id(cls, map_id: int, **kwargs):
+    async def from_id(cls, map_id: int, **pp_attrs):
         # ensure we have the file on disk for recalc
         if not await cls.get_file(map_id):
             return
 
-        return cls(map_id, **kwargs)
+        return cls(map_id, **pp_attrs)
 
     async def perform(self) -> tuple[float, float]:
         """Perform the calculations with the current state, returning (pp, sr)."""
 
         # std and taiko.
-        if self.mode.as_vanilla in (0, 1):
+        if self.mode_vn in (0, 1):
             # TODO: PLEASE rewrite this with c bindings,
             # add ways to get specific stuff like aim pp
 
@@ -81,23 +80,19 @@ class PPCalculator:
             # use subprocess to do the calculations (yikes).
             cmd = [f'sudo ./oppai-ng/oppai {self.file}']
 
-            # ?????????
-            plus = '+'
-            if self.mods:  cmd.append(f'{plus}{repr(self.mods)}')
+            if 'mods' in self.pp_attrs:
+                cmd.append(f'+{self.pp_attrs["mods"]!r}')
+            if 'combo' in self.pp_attrs:
+                cmd.append(f'{self.pp_attrs["combo"]}x')
+            if 'nmiss' in self.pp_attrs:
+                cmd.append(f'{self.pp_attrs["nmiss"]}xM')
+            if 'acc' in self.pp_attrs:
+                cmd.append(f'{self.pp_attrs["acc"]:.4f}%')
 
-            if self.combo: cmd.append(f'{self.combo}x')
-            if self.nmiss: cmd.append(f'{self.nmiss}xM')
-            if self.acc:   cmd.append(f'{self.acc:.4f}%')
-
-            if self.mode:
-                mode_vn = self.mode.as_vanilla
-
-                if self.mode == GameMode.vn_taiko or self.mode == GameMode.rx_taiko:
-                    cmd.append('-m1')
-                else:
-                    cmd.append(f'-m{mode_vn}')
-                if self.mode == GameMode.vn_taiko or self.mode == GameMode.rx_taiko:
-                    cmd.append('-taiko')
+            if self.mode_vn != 0:
+                cmd.append(f'-{self.mode_vn}')
+                if self.mode_vn == 1:
+                    cnd,append('-otaiko')
 
             # XXX: could probably use binary to save a bit
             # of time.. but in reality i should just write
@@ -122,12 +117,20 @@ class PPCalculator:
         
         # mania.
         elif self.mode.as_vanilla == 3:
-            # You can see what calculations are done here:
-            # https://github.com/NiceAesth/maniera/blob/master/maniera/calculator.py
-            calc = Maniera(self.file, self.mods, self.score)
-            await asyncio.get_event_loop().run_in_executor(None, calc.calculate)
-            return calc.pp, calc.sr
+            from maniera.calculator import Maniera
+            if 'score' not in self.pp_attrs:
+                log('Err: pp calculator needs score for mania.', Ansi.LRED)
+                return (0.0, 0.0)
+
+            if 'mods' in self.pp_attrs:
+                mods = int(self.pp_attrs['mods'])
+            else:
+                mods = 0
+
+            calc = Maniera(self.file, mods, self.pp_attrs['score'])
+            calc.calculate()
+            return (calc.pp, calc.sr)
 
         # TODO: osu!catch support
         else:
-            return
+            return (0.0, 0.0)
