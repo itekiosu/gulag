@@ -66,7 +66,7 @@ nano config.py
 ##########################################
 
 # start the server
-./main.py
+./gulag.py
 ```
 
 Directory Structure
