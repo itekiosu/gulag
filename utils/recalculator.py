@@ -92,7 +92,7 @@ class PPCalculator:
             if self.mode_vn != 0:
                 cmd.append(f'-{self.mode_vn}')
                 if self.mode_vn == 1:
-                    cnd,append('-otaiko')
+                    cmd.append('-otaiko')
 
             # XXX: could probably use binary to save a bit
             # of time.. but in reality i should just write
