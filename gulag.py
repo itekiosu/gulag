@@ -172,6 +172,7 @@ async def before_serving() -> None:
             'WHERE id = %s',
             [p.id]
         )
+        await glob.db.execute('DELETE FROM user_badges WHERE badgeid = 3 AND userid = %s', [p.id])
 
         if p.online:
             p.enqueue(packets.notification('Your supporter status has expired.'))
