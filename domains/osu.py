@@ -793,11 +793,9 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
             [s.bmap.md5, s.player.id, s.mode.as_vanilla]
         )
 
-    smr = to_readable(int(s.mods))
-
-    if "DT" in smr:
+    if s.mods & Mods.DOUBLETIME:
         DTm = True
-    elif "NC" in smr:
+    elif s.mods & Mods.NIGHTCORE:
         DTm = True
     else:
         DTm = False
@@ -805,7 +803,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
     # high bpm buff here when i can be bothered to grab bpm and stuff
     
     # high acc 3 mod buff but nerf low acc
-    if "RX" in to_readable(int(s.mods)) and DTm and "HR" in to_readable(int(s.mods)):
+    if s.mods & Mods.RELAX and DTm and s.mods & Mods.RELAX:
         if s.acc > 98.7:
             s.pp = float(s.pp * 1.03)
         if s.acc < 97.7:
@@ -900,9 +898,9 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
             # client compressed with LZMA; this compression can
             # be improved pretty decently by serializing it
             # manually, so we'll probably do that in the future.
-            if "RX" in to_readable(int(s.mods)):
+            if s.mods & Mods.RELAX:
                 replay_file = REPLAYS_PATH_RX / f'{s.id}.osr'
-            elif "AP" in to_readable(int(s.mods)):
+            elif s.mods & Mods.RELAX2:
                 replay_file = REPLAYS_PATH_AP / f'{s.id}.osr'
             else:
                 replay_file = REPLAYS_PATH / f'{s.id}.osr'
