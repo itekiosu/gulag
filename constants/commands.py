@@ -598,7 +598,7 @@ async def _requests(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         else:
             m = 'id'
 
-        e = await glob.db.fetch('SELECT version, artist, title, mode FROM maps WHERE %s = %s'), [m, request['map']]
+        e = await glob.db.fetch(f'SELECT version, artist, title, mode FROM maps WHERE {m} = %s'), [request['map']]
         if request["type"] == 'set':
             typem = 's'
             diff = ''
