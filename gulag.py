@@ -4,7 +4,6 @@
 import lzma
 import os
 import sys
-import sys
 sys._excepthook = sys.excepthook # backup
 def _excepthook(type, value, traceback):
     if type is KeyboardInterrupt:
