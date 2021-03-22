@@ -248,7 +248,7 @@ async def _req(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         mode = 'osu!mania'
     else:
         mode = None
-    embed.add_field(name = f'New request to {msg[0]} {msg[1]} from {p.name}. Please check the request ingame! (Mode: {mode})', value = f'[{p.last_np.artist} - {p.last_np.title} {diff}](https://osu.ppy.sh/b/{p.last_np.id})', inline = True)
+    embed.add_field(name = f'New request to {msg[0]} {msg[1]} from {p.name}. Please check the request ingame! (Mode: {mode})', value = f'[{p.last_np.artist} - {p.last_np.title} {diff}](https://osu.{glob.config.domain}/b/{p.last_np.id})', inline = True)
     webhook.add_embed(embed)
     await webhook.post()
 
@@ -347,7 +347,7 @@ async def _deny(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
 
     artist = e['artist']
     title = e['title']
-    embed = f"[https://osu.ppy.sh/{typem}/{request['map']} {artist} - {title} {diff}]"
+    embed = f"[https://osu.{glob.config.domain}/{typem}/{request['map']} {artist} - {title} {diff}]"
     msg = f"Your request to {request['status']} {embed} was denied. The map's status has been unchanged."
     if (u := await glob.players.get(name=requester)):
         await u.send(glob.bot, msg)
@@ -389,7 +389,7 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
 
     artist = e['artist']
     title = e['title']
-    embed = f"[https://osu.ppy.sh/{typem}/{request['map']} {artist} - {title} {diff}]"
+    embed = f"[https://osu.{glob.config.domain}/{typem}/{request['map']} {artist} - {title} {diff}]"
     if msg[1] == 'rank':
         ns = 'ranked'
     elif msg[1] == 'love':
@@ -428,7 +428,7 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         embed.set_author(url = f"https://{glob.config.domain}/u/{p.id}", name = p.name, icon_url = f"https://a.{glob.config.domain}/{p.id}")
         thumb_url = f'https://assets.ppy.sh/beatmaps/{request["map"]}/covers/card.jpg'
         embed.set_image(url=thumb_url)
-        embed.add_field(name = f'New {ns} map', value = f'[{artist} - {title}](https://osu.ppy.sh/s/{request["map"]}) is now {ns}', inline = True)
+        embed.add_field(name = f'New {ns} map', value = f'[{artist} - {title}](https://osu.{glob.config.domain}/s/{request["map"]}) is now {ns}', inline = True)
         webhook.add_embed(embed)
         await webhook.post()
         return f'Request accepted! It is now {ns}'
@@ -462,7 +462,7 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         set_id = ad['set_id']
         thumb_url = f'https://assets.ppy.sh/beatmaps/{set_id}/covers/card.jpg'
         embed.set_image(url=thumb_url)
-        embed.add_field(name = f'New {ns} map', value = f'[{artist} - {title} {diff}](https://osu.ppy.sh/b/{request["map"]}) is now {ns}', inline = True)
+        embed.add_field(name = f'New {ns} map', value = f'[{artist} - {title} {diff}](https://osu.{glob.config.domain}/b/{request["map"]}) is now {ns}', inline = True)
         webhook.add_embed(embed)
         await webhook.post()
         return f'Request accepted! It is now {ns}'
@@ -609,7 +609,7 @@ async def _requests(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         artist = e['artist']
         title = e['title']
         intmode = e['mode']
-        embed = f"[https://osu.ppy.sh/{typem}/{request['map']} {artist} - {title} {diff}]"
+        embed = f"[https://osu.{glob.config.domain}/{typem}/{request['map']} {artist} - {title} {diff}]"
         rankm = await p.add_to_menu(rank)
         lovem = await p.add_to_menu(love)
         unrankm = await p.add_to_menu(unrank)
@@ -662,7 +662,7 @@ async def _map(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         diff = f'[{p.last_np.version}]'
     else:
         diff = ''
-    embed.add_field(name = f'New {ns} map', value = f'[{p.last_np.artist} - {p.last_np.title} {diff}](https://osu.ppy.sh/b/{p.last_np.id}) is now {ns}', inline = True)
+    embed.add_field(name = f'New {ns} map', value = f'[{p.last_np.artist} - {p.last_np.title} {diff}](https://osu.{glob.config.domain}/b/{p.last_np.id}) is now {ns}', inline = True)
     webhook.add_embed(embed)
     await webhook.post()
 
