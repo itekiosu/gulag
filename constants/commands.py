@@ -327,7 +327,7 @@ async def _deny(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     if not msg[0]:
         return 'Please provide a request ID to deny!'
 
-    request = await glob.db.fetch(f'SELECT id, requester, map, status, type FROM requests WHERE id = {msg[0]}')
+    request = await glob.db.fetch('SELECT id, requester, map, status, type FROM requests WHERE id = %s', [msg[0]])
     if request is not None:
         requester = request['requester']
     else:
@@ -369,7 +369,7 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     if not msg[1]:
         return 'Please provide a status to apply to this request! (rank/love/unrank)'
 
-    request = await glob.db.fetch(f'SELECT id, requester, map, status, type FROM requests WHERE id = {msg[0]}')
+    request = await glob.db.fetch('SELECT id, requester, map, status, type FROM requests WHERE id = %s', [msg[0]])
     if request is not None:
         requester = request['requester']
     else:
@@ -470,7 +470,7 @@ async def accept(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
 @command(Privileges.Nominator, hidden=True)
 async def _requests(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     async def rank():
-        await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
+        await glob.db.execute("DELETE FROM requests WHERE map = %s", [request['map']])
         nsr = 2
         if request["type"] == 'set':
             # update whole set
@@ -507,7 +507,7 @@ async def _requests(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
                     break
 
     async def unrank():
-        await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
+        await glob.db.execute("DELETE FROM requests WHERE map = %s", [request['map']])
         nsu = 0
         if request["type"] == 'set':
             # update whole set
@@ -544,7 +544,7 @@ async def _requests(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
                     break
 
     async def love():
-        await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
+        await glob.db.execute("DELETE FROM requests WHERE map = %s", [request['map']])
         if request["type"] == 'set':
             # update whole set
             await glob.db.execute(
@@ -582,7 +582,7 @@ async def _requests(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
     async def deny():
         p.enqueue(packets.notification('Request denied!'))
         u = await glob.players.get(name=request["requester"])
-        await glob.db.execute(f"DELETE FROM requests WHERE map = {request['map']}")
+        await glob.db.execute("DELETE FROM requests WHERE map = %s", [request['map']])
         await u.send(glob.bot, f"Your request to {request['status']} {embed} was denied. The map's status has been unchanged.")
 
     async for request in glob.db.iterall('SELECT id, requester, map, status, type FROM requests'):
@@ -598,7 +598,7 @@ async def _requests(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         else:
             m = 'id'
 
-        e = await glob.db.fetch(f'SELECT version, artist, title, mode FROM maps WHERE {m} = {request["map"]}')
+        e = await glob.db.fetch('SELECT version, artist, title, mode FROM maps WHERE %s = %s'), [m, request['map']]
         if request["type"] == 'set':
             typem = 's'
             diff = ''
@@ -685,8 +685,8 @@ async def _map(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
             if cached['map'].set_id == p.last_np.set_id:
                 cached['map'].status = RankedStatus(new_status)
         
-        await glob.db.fetch(f'DELETE FROM requests WHERE map = {p.last_np.set_id}')
-        await glob.db.fetch(f'DELETE FROM requests WHERE map = {p.last_np.id}')
+        await glob.db.fetch('DELETE FROM requests WHERE map = %s', [p.last_np.set_id])
+        await glob.db.fetch('DELETE FROM requests WHERE map = %s', [p.last_np.id])
 
     else:
         # update only map
@@ -702,8 +702,8 @@ async def _map(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
                 cached['map'].status = RankedStatus(new_status)
                 break
         
-        await glob.db.fetch(f'DELETE FROM requests WHERE map = {p.last_np.id}')
-        await glob.db.fetch(f'DELETE FROM requests WHERE map = {p.last_np.set_id}')
+        await glob.db.fetch('DELETE FROM requests WHERE map = %s', [p.last_np.id])
+        await glob.db.fetch('DELETE FROM requests WHERE map = %s', [p.last_np.set_id])
 
     return 'Map updated!'
 
