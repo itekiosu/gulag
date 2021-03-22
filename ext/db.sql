@@ -10,6 +10,36 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `badges`
+--
+
+CREATE TABLE `badges` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `colour` varchar(255) NOT NULL,
+  `icon` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `badges`
+--
+
+INSERT INTO `badges` (`id`, `name`, `colour`, `icon`) VALUES
+(1, 'Verified', 'color:rgb(0, 255, 21);', 'fas fa-check'),
+(2, 'Admin', 'color:rgb(168, 19, 41);', 'fas fa-user-tie'),
+(3, 'Donator', 'color:rgb(0, 162, 236);', 'fas fa-heart'),
+(4, 'Nominator', 'color:rgb(237, 211, 62);', 'fas fa-circle'),
+(6, 'Developer', 'color:rgb(147,112,219);', 'fas fa-blind'),
+(7, 'Owner', '', 'fas fa-cog'),
+(8, 'Co Owner', '', 'fas fa-battery-half');
+
+ALTER TABLE `badges`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  
+ALTER TABLE `badges`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Table structure for table `server_stats`
 --
 
