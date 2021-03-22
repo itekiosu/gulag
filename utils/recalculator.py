@@ -113,10 +113,13 @@ class PPCalculator:
                 log(f"oppai-ng: {output['errstr']}", Ansi.LRED)
 
             await proc.wait() # wait for exit
-            return output['pp'], output['stars']
+            try:
+                return output['pp'], output['stars']
+            except:
+                return (0.0, 0.0)
         
         # mania.
-        elif self.mode.as_vanilla == 3:
+        elif self.mode_vn == 3:
             from maniera.calculator import Maniera
             if 'score' not in self.pp_attrs:
                 log('Err: pp calculator needs score for mania.', Ansi.LRED)
