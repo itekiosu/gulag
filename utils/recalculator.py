@@ -119,7 +119,7 @@ class PPCalculator:
                 return (0.0, 0.0)
         
         # mania.
-        elif self.mode_vn == 3:
+        if self.mode_vn == 3:
             from maniera.calculator import Maniera
             if 'score' not in self.pp_attrs:
                 log('Err: pp calculator needs score for mania.', Ansi.LRED)
@@ -134,6 +134,5 @@ class PPCalculator:
             calc.calculate()
             return (calc.pp, calc.sr)
 
-        # TODO: osu!catch support
-        else:
+        if self.mode_vn == 2:
             return (0.0, 0.0)
