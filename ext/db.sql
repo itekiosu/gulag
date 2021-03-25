@@ -39,6 +39,34 @@ ALTER TABLE `badges`
 ALTER TABLE `badges`
   ADD PRIMARY KEY (`id`);
 
+CREATE TABLE `user_hashes` (
+  `id` int(11) NOT NULL,
+  `osupath` char(32) NOT NULL,
+  `adapters` char(32) NOT NULL,
+  `uninstall_id` char(32) NOT NULL,
+  `disk_serial` char(32) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `user_hashes`
+--
+ALTER TABLE `user_hashes`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `user_hashes`
+--
+ALTER TABLE `user_hashes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+ 
 --
 -- Table structure for table `server_stats`
 --
