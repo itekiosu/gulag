@@ -183,6 +183,13 @@ class PlayerList:
 
         return Player(**res)
 
+    async def get_ensure(self, **kwargs) -> Optional[Player]:
+        """Try to get player from cache, or sql as fallback."""
+        if p := self.get(**kwargs):
+            return p
+        elif p := await self.get_sql(**kwargs):
+            return p
+
     async def get_login(self, name: str, pw_md5: str, sql: bool = False) -> Optional[Player]:
         # only used cached results - the user should have
         # logged into bancho at least once. (This does not
