@@ -724,7 +724,6 @@ class Player:
         # Call a function
         country, lat, _long = await geoloc_fetch(ip)
 
-        # this is genuinely the worst thing i have ever made, desperate async friendly version needed soontm because this batters the fast login time
         if self.priv & Privileges.Staff or self.priv & Privileges.Donator or self.priv & Privileges.Alumni or self.priv & Privileges.Nominator:
             res = await glob.db.fetch(
                 'SELECT country AS c FROM users '
@@ -765,6 +764,7 @@ class Player:
             return # ?
 
         stats = self.stats[mode]
+        beforer = stats.rank
 
         # increment playcount
         stats.plays += 1
@@ -800,12 +800,8 @@ class Player:
             [stats.pp, self.country[1]]
         )
 
-        stats.rank = res['c'] + 1
         crank = res1['c'] + 1
-
-        # make other users -1 if same rank
-        await glob.db.execute(f'UPDATE stats SET rank_{mode:sql} = rank_{mode:sql} - 1 WHERE id != %s AND rank_{mode:sql} = %s', [self.id, stats.rank])
-        await glob.db.execute(f'UPDATE stats LEFT JOIN users ON stats.id = users.id SET stats.crank_{mode:sql} = stats.crank_{mode:sql} - 1 WHERE stats.id != %s AND stats.crank_{mode:sql} = %s AND users.country = %s', [self.id, crank, self.country[1]])
+        stats.rank = res['c'] + 1
 
         # give user their new rank
         await glob.db.execute(
@@ -818,6 +814,12 @@ class Player:
             'WHERE id = %s'.format(mode),
             [crank, self.id]
         )
+
+        if stats.rank != beforer:
+            # make other users -1 if rank has changed
+            await glob.db.execute(f'UPDATE stats SET rank_{mode:sql} = rank_{mode:sql} + 1 WHERE id != %s', [self.id])
+            await glob.db.execute(f'UPDATE stats LEFT JOIN users ON stats.id = users.id SET stats.crank_{mode:sql} = stats.crank_{mode:sql} + 1 WHERE stats.id != %s AND users.country = %s', [self.id, self.country[1]])
+
         self.enqueue(packets.userStats(self))
 
     async def friends_from_sql(self) -> None:
@@ -826,8 +828,8 @@ class Player:
             'SELECT user2 FROM friendships WHERE user1 = %s', [self.id]
         )}
 
-        # always have self & bot added to friends.
-        self.friends = _friends | {1, self.id}
+        # always have bot added to friends.
+        self.friends = _friends | {1}
 
     async def achievements_from_sql(self) -> None:
         """Retrieve `self`'s achievements from sql."""
