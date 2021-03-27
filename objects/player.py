@@ -805,7 +805,7 @@ class Player:
 
         # make other users -1 if same rank
         await glob.db.execute(f'UPDATE stats SET rank_{mode:sql} = rank_{mode:sql} - 1 WHERE id != %s AND rank_{mode:sql} = %s', [self.id, stats.rank])
-        await glob.db.execute(f'UPDATE stats SET crank_{mode:sql} = crank_{mode:sql} - 1 FROM stats LEFT JOIN users USING(id) WHERE stats.id != %s AND crank_{mode:sql} = %s AND users.country = %s', [self.id, crank, self.country[1]])
+        await glob.db.execute(f'UPDATE stats LEFT JOIN users ON stats.id = users.id SET stats.crank_{mode:sql} = stats.crank_{mode:sql} - 1 WHERE stats.id != %s AND stats.crank_{mode:sql} = %s AND users.country = %s', [self.id, crank, self.country[1]])
 
         # give user their new rank
         await glob.db.execute(
