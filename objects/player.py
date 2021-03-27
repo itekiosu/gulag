@@ -764,7 +764,6 @@ class Player:
             return # ?
 
         stats = self.stats[mode]
-        beforer = stats.rank
 
         # increment playcount
         stats.plays += 1
@@ -814,11 +813,6 @@ class Player:
             'WHERE id = %s'.format(mode),
             [crank, self.id]
         )
-
-        if stats.rank != beforer:
-            # make other users -1 if rank has changed
-            await glob.db.execute(f'UPDATE stats SET rank_{mode:sql} = rank_{mode:sql} + 1 WHERE id != %s', [self.id])
-            await glob.db.execute(f'UPDATE stats LEFT JOIN users ON stats.id = users.id SET stats.crank_{mode:sql} = stats.crank_{mode:sql} + 1 WHERE stats.id != %s AND users.country = %s', [self.id, self.country[1]])
 
         self.enqueue(packets.userStats(self))
 
