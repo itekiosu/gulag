@@ -394,54 +394,44 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
 
     # TODO: runningunderwine support
 
-    # find any other users from any of the same hwid values.
-    hwid_matches = await glob.db.fetchall(
-        'SELECT u.`name`, u.`priv`, h.`occurrences` '
-        'FROM `client_hashes` h '
-        'INNER JOIN `users` u ON h.`userid` = u.`id` '
-        'WHERE h.`userid` != %s AND (h.`adapters` = %s '
-        'OR h.`uninstall_id` = %s OR h.`disk_serial` = %s OR h.`ip` = %s)',
-        [user_info['id'], *client_hashes[1:], ip]
-    )
+    mmatch = await glob.db.fetchall('SELECT u.name, h.adapters FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.adapters = %s', [user_info['id'], client_hashes[1]])
+    dmatch = await glob.db.fetchall('SELECT u.name, h.disk_serial FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.disk_serial = %s', [user_info['id'], client_hashes[3]])
 
-    if hwid_matches:
-        # we have other accounts with matching hashes
+    if mmatch:
+        webhook_url = glob.config.webhooks['audit-log']
+        webhook = Webhook(url=webhook_url)
+        embed = Embed(title = f'')
+        embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
+        thumb_url = f'https://a.{glob.config.domain}/1'
+        embed.set_thumbnail(url=thumb_url)
+        for a in mmatch:
+            unames = []
+            unames.append[a['name']]
+        embed.add_field(name = 'New banned user', value = f"{user_info['name']} has been banned for a MAC match ({mmatch['adapters']}) with user(s) {unames}", inline = True)
+        webhook.add_embed(embed)
+        await webhook.post()
+        if not (t := await glob.players.get(name=username, sql=True)):
+            return f'"{username}" not found.'
+        reason = f'Matching MAC hash with user(s) {unames}'
+        await t.ban(p, reason)
 
-        # NOTE: this is an area i've seen a lot of implementations rush
-        # through and poorly design; this section is CRITICAL for both
-        # keeping multiaccounting down, but perhaps more importantly in
-        # scenarios where multiple users are forced to use a single pc
-        # (lan meetups, at a friends place, shared computer, etc.).
-        # these scenarios are usually the ones where new players will
-        # get invited to your server.. first impressions are important
-        # and you don't want a ban and support ticket to be this users
-        # first experience. :P
-
-        # anyways yeah needless to say i'm gonna think about this one
-
-        if not user_info['priv'] & Privileges.Verified:
-            # this player is not verified yet, this is their first
-            # time connecting in-game and submitting their hwid set.
-            # we will not allow any banned matches; if there are any,
-            # then ask the user to contact staff and resolve manually.
-            if not all([x['priv'] & Privileges.Normal for x in hwid_matches]):
-                return (packets.notification('Please contact staff directly '
-                                             'to create an account.') +
-                        packets.userID(-1)), 'no'
-
-        else:
-            for a in hwid_matches:
-                matches_name = []
-                matches_name.append(a["name"])
-            webhook_url = glob.config.webhooks['audit-log']
-            webhook = Webhook(url=webhook_url)
-            embed = Embed(title = f'')
-            embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
-            thumb_url = f'https://a.{glob.config.domain}/1'
-            embed.set_thumbnail(url=thumb_url)
-            embed.add_field(name = 'New flagged user', value = f'{username} has been flagged for a HWID/IP match ({client_hashes}) with user(s) {matches_name}', inline = True)
-            webhook.add_embed(embed)
-            await webhook.post()
+    if dmatch:
+        webhook_url = glob.config.webhooks['audit-log']
+        webhook = Webhook(url=webhook_url)
+        embed = Embed(title = f'')
+        embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
+        thumb_url = f'https://a.{glob.config.domain}/1'
+        embed.set_thumbnail(url=thumb_url)
+        for a in dmatch:
+            unames = []
+            unames.append[a['name']]
+        embed.add_field(name = 'New banned user', value = f"{user_info['name']} has been banned for a disk serial match ({dmatch['disk_serial']}) with user(s) {unnames}", inline = True)
+        webhook.add_embed(embed)
+        await webhook.post()
+        if not (t := await glob.players.get(name=username, sql=True)):
+            return f'"{username}" not found.'
+        reason = f'Matching disk serial with user {mmatch["name"]}'
+        await t.ban(p, reason)
 
     if first_login := not user_info['priv'] & Privileges.Verified:
         # verify the account if it's made it this far
