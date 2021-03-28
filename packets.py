@@ -942,6 +942,13 @@ def monitor() -> bytes:
 
 # packet id: 81
 @cache
+def matchPlayerSkipped(pid: int) -> bytes:
+    return write(
+        Packets.CHO_MATCH_PLAYER_SKIPPED,
+        (pid, osuTypes.i32)
+    )
+             
+@cache
 def botPresence():
     return write(
         Packets.CHO_USER_PRESENCE,
