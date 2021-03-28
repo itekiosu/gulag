@@ -396,6 +396,8 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
 
     mmatch = await glob.db.fetchall('SELECT u.name, h.adapters FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.adapters = %s', [user_info['id'], client_hashes[1]])
     dmatch = await glob.db.fetchall('SELECT u.name, h.disk_serial FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.disk_serial = %s', [user_info['id'], client_hashes[3]])
+    # no uninstallid check as these are often false, may just make it a flag later on in iteki's life
+    imatch = await glob.db.fetchall('SELECT u.name, h.ip FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.ip = %s', [user_info['id'], ip])
 
     if mmatch:
         webhook_url = glob.config.webhooks['audit-log']
@@ -406,7 +408,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         embed.set_thumbnail(url=thumb_url)
         for a in mmatch:
             unames = []
-            unames.append[a['name']]
+            unames.append(a['name'])
         embed.add_field(name = 'New banned user', value = f"{user_info['name']} has been banned for a MAC match ({mmatch['adapters']}) with user(s) {unames}", inline = True)
         webhook.add_embed(embed)
         await webhook.post()
@@ -424,7 +426,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         embed.set_thumbnail(url=thumb_url)
         for a in dmatch:
             unames = []
-            unames.append[a['name']]
+            unames.append(a['name'])
         embed.add_field(name = 'New banned user', value = f"{user_info['name']} has been banned for a disk serial match ({dmatch['disk_serial']}) with user(s) {unnames}", inline = True)
         webhook.add_embed(embed)
         await webhook.post()
@@ -432,6 +434,21 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
             return f'"{username}" not found.'
         reason = f'Matching disk serial with user {mmatch["name"]}'
         await t.ban(p, reason)
+
+    # only flag for an IP match as there is often very good reasons for this happening and we don't want often false bans :c
+    if imatch:
+        webhook_url = glob.config.webhooks['audit-log']
+        webhook = Webhook(url=webhook_url)
+        embed = Embed(title = f'')
+        embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
+        thumb_url = f'https://a.{glob.config.domain}/1'
+        embed.set_thumbnail(url=thumb_url)
+        for a in imatch:
+            unames = []
+            unames.append(a['name'])
+        embed.add_field(name = 'New flagged user', value = f"{user_info['name']} has been flagged for an IP match ({imatch['ip']}) with user(s) {unnames}", inline = True)
+        webhook.add_embed(embed)
+        await webhook.post()
 
     if first_login := not user_info['priv'] & Privileges.Verified:
         # verify the account if it's made it this far
