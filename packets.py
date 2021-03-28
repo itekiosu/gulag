@@ -947,9 +947,26 @@ def matchPlayerSkipped(pid: int) -> bytes:
         Packets.CHO_MATCH_PLAYER_SKIPPED,
         (pid, osuTypes.i32)
     )
+             
+@cache
+def botPresence():
+    return write(
+        Packets.CHO_USER_PRESENCE,
+        (glob.bot.id, osuTypes.i32),
+        (glob.bot.name, osuTypes.string),
+        (-5 + 24, osuTypes.u8),
+        (245, osuTypes.u8), # satellite provider
+        (31, osuTypes.u8),
+        (1234.0, osuTypes.f32), # send coordinates waaay
+        (4321.0, osuTypes.f32), # off the map for the bot
+        (0, osuTypes.i32)
+    )
 
 # packet id: 83
 def userPresence(p: 'Player') -> bytes:
+    if p is glob.bot:
+        return botPresence()
+
     return write(
         Packets.CHO_USER_PRESENCE,
         (p.id, osuTypes.i32),
@@ -960,10 +977,6 @@ def userPresence(p: 'Player') -> bytes:
         (p.location[1], osuTypes.f32), # long
         (p.location[0], osuTypes.f32), # lat
         (p.gm_stats.rank, osuTypes.i32)
-    ) if p is not glob.bot else ( # default for bot
-        b'S\x00\x00\x19\x00\x00\x00\x01\x00\x00\x00'
-        b'\x0b\x04Ruji\x14&\x1f\x00\x00\x9d\xc2\x00'
-        b'\x000B\x00\x00\x00\x00'
     )
 
 # packet id: 86
