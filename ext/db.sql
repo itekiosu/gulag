@@ -37,7 +37,7 @@ ALTER TABLE `badges`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
   
 ALTER TABLE `badges`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (id);
 
 CREATE TABLE `user_hashes` (
   `id` int(11) NOT NULL,
