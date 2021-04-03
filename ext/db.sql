@@ -32,12 +32,12 @@ INSERT INTO `badges` (`id`, `name`, `colour`, `icon`) VALUES
 (6, 'Developer', 'color:rgb(147,112,219);', 'fas fa-blind'),
 (7, 'Owner', '', 'fas fa-cog'),
 (8, 'Co Owner', '', 'fas fa-battery-half');
-
-ALTER TABLE `badges`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
   
 ALTER TABLE `badges`
   ADD PRIMARY KEY (id);
+
+ALTER TABLE `badges`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 CREATE TABLE `user_hashes` (
   `id` int(11) NOT NULL,
