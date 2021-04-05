@@ -675,19 +675,6 @@ CREATE TABLE `user_achievements` (
   `achid` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `user_hashes`
---
-
-CREATE TABLE `user_hashes` (
-  `id` int(11) NOT NULL,
-  `osupath` char(32) NOT NULL,
-  `adapters` char(32) NOT NULL,
-  `uninstall_id` char(32) NOT NULL,
-  `disk_serial` char(32) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Indexes for dumped tables
