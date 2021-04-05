@@ -2088,7 +2088,7 @@ async def osuBMSubmitGetID(conn: Connection) -> Optional[bytes]:
     ]).encode()
 """
 
-""" /api/ Handlers """
+""" /gapi/ Handlers """
 @domain.route('/gapi/get_online')
 async def api_get_online(conn: Connection) -> Optional[bytes]:
     """Get the current amount of online players."""
