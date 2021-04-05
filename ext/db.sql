@@ -32,12 +32,12 @@ INSERT INTO `badges` (`id`, `name`, `colour`, `icon`) VALUES
 (6, 'Developer', 'color:rgb(147,112,219);', 'fas fa-blind'),
 (7, 'Owner', '', 'fas fa-cog'),
 (8, 'Co Owner', '', 'fas fa-battery-half');
+  
+ALTER TABLE `badges`
+  ADD PRIMARY KEY (id);
 
 ALTER TABLE `badges`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
-  
-ALTER TABLE `badges`
-  ADD PRIMARY KEY (`id`);
 
 CREATE TABLE `user_hashes` (
   `id` int(11) NOT NULL,
@@ -675,19 +675,6 @@ CREATE TABLE `user_achievements` (
   `achid` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `user_hashes`
---
-
-CREATE TABLE `user_hashes` (
-  `id` int(11) NOT NULL,
-  `osupath` char(32) NOT NULL,
-  `adapters` char(32) NOT NULL,
-  `uninstall_id` char(32) NOT NULL,
-  `disk_serial` char(32) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Indexes for dumped tables
@@ -874,11 +861,6 @@ ALTER TABLE `users`
 ALTER TABLE `user_achievements`
   ADD PRIMARY KEY (`userid`,`achid`);
 
---
--- Indexes for table `user_hashes`
---
-ALTER TABLE `user_hashes`
-  ADD PRIMARY KEY (`id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -954,11 +936,6 @@ ALTER TABLE `tourney_pools`
 --
 ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
---
--- AUTO_INCREMENT for table `user_hashes`
---
-ALTER TABLE `user_hashes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
