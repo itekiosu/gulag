@@ -13,7 +13,7 @@ Installation Guide
 -------------
 important notes:
 - ubuntu 20.04 & nginx have unknown issues? i recommend using 18.04
-
+- we have an extremely different infrastructure to cmyui's repo so if you're using anything from his src then don't use this
 ```sh
 # add ppa for py3.9 (required since it's new)
 sudo add-apt-repository ppa:deadsnakes/ppa
