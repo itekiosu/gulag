@@ -641,62 +641,76 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         return b'error: no' # not now though.
 
 
-    try:
-        url = f'{glob.config.mirror}/b/{s.bmap.id}'
-        async with glob.http.get(url) as resp:
-            if not resp or resp.status != 200:
-                log('Failed to retrieve data from mirror!', Ansi.LRED)
-                bl = False
-            else:
-                try:
-                    result = await resp.json()
-                    length = result['TotalLength']
-                    bl = True
-                except:
-                    bl = False
-    except:
-        bl = False
+    ## not working anticheat below because peppy gay :(
+    # try:
+    #     if not USING_CHIMU:
+    #         url = f'{glob.config.mirror}/b/{s.bmap.id}'
+    #     else:
+    #         url = f'https://api.chimu.moe/cheesegull/b/{s.bmap.id}'
+    #     async with glob.http.get(url) as resp:
+    #         if not resp or resp.status != 200:
+    #             log('Failed to retrieve data from mirror!', Ansi.LRED)
+    #             bl = False
+    #             log('bl is false')
+    #         else:
+    #             try:
+    #                 result = await resp.json()
+    #                 length = result['TotalLength']
+    #                 bl = True
+    #                 log('bl is true')
+    #             except:
+    #                 bl = False
+    #                 log('bl is false')
+    # except:
+    #     bl = False
+    #     log('bl is false')
 
-    if not mp_args['st']:
-        #hq or some other ancient cheat lol
-        log(f'{s.player} banned for attempting to submit a cheated score on gm {s.mode!r}.', Ansi.LRED)
-        await s.player.ban(glob.bot, f'[{s.mode!r}] autoban for missing st arg')
-        webhook_url = glob.config.webhooks['audit-log']
-        webhook = Webhook(url=webhook_url)
-        embed = Embed(title = f'New banned user')
-        embed.set_author(url = f"https://{glob.config.domain}/u/{s.player.id}", name = s.player.name, icon_url = f"http://a.{glob.config.domain}/{s.player.id}")
-        thumb_url = f'http://a.{glob.config.domain}/1'
-        embed.set_thumbnail(url=thumb_url)
-        embed.add_field(name = 'Anticheat', value = f'{s.player.name} for using missing st arg.', inline = True)
-        webhook.add_embed(embed)
-        await webhook.post()
-        return b'error: ban'
+    # if not mp_args['st']:
+    #     #hq or some other ancient cheat lol
+    #     log(f'{s.player} banned for attempting to submit a cheated score on gm {s.mode!r}.', Ansi.LRED)
+    #     await s.player.ban(glob.bot, f'[{s.mode!r}] autoban for missing st arg')
+    #     webhook_url = glob.config.webhooks['audit-log']
+    #     webhook = Webhook(url=webhook_url)
+    #     embed = Embed(title = f'New banned user')
+    #     embed.set_author(url = f"https://{glob.config.domain}/u/{s.player.id}", name = s.player.name, icon_url = f"http://a.{glob.config.domain}/{s.player.id}")
+    #     thumb_url = f'http://a.{glob.config.domain}/1'
+    #     embed.set_thumbnail(url=thumb_url)
+    #     embed.add_field(name = 'Anticheat', value = f'{s.player.name} for using missing st arg.', inline = True)
+    #     webhook.add_embed(embed)
+    #     await webhook.post()
+    #     return b'error: ban'
 
-    if bl and glob.config.anticheat:
-        if "DT" in to_readable(int(s.mods)):
-            length = length // 1.5
-        elif "NC" in to_readable(int(s.mods)):
-            length = length // 1.5
-        elif "HT" in to_readable(int(s.mods)):
-            length = length // 0.75
+    # if bl and s.player.id == 3:
+    #     if s.mods & Mods.NIGHTCORE:
+    #         length = length // 1.5
+    #     elif s.mods & Mods.DOUBLETIME:
+    #         length = length // 1.5
+    #     elif s.mods & Mods.HALFTIME:
+    #         length = length // 0.75
 
-        # average leniency for user to not get banned falsely on every score submission lol
-        length = length + 5
+    #     if int(mp_args['x']) == 0 and int(mp_args['ft']) == 0:
+    #         log('Valid score, checking for timewarp')
+    #     else:
+    #         log(f'Invalid? x: {mp_args["x"]} & ft: {mp_args["ft"]}')
 
-        if int(length) < (int(mp_args['st'])//1000) and s.passed:
-            log(f'Beatmap mirror length: {length} vs player length {(int(mp_args["st"])//1000)} (Potential timewarp user: {s.player})', Ansi.LRED)
-            log(f'{s.player} banned for submitting a score with timewarp on gm {s.mode!r}.', Ansi.LRED)
-            #await s.player.ban(glob.bot, f'[{s.mode!r}] autoban for timewarp')
-            webhook_url = glob.config.webhooks['audit-log']
-            webhook = Webhook(url=webhook_url)
-            embed = Embed(title = f'New flagged user')
-            embed.set_author(url = f"https://{glob.config.domain}/u/{s.player.id}", name = s.player.name, icon_url = f"http://a.{glob.config.domain}/{s.player.id}")
-            thumb_url = f'http://a.{glob.config.domain}/1'
-            embed.set_thumbnail(url=thumb_url)
-            embed.add_field(name = 'Anticheat', value = f'{s.player.name} for potential timewarp (Beatmap mirror length {length} vs player length {(int(mp_args["st"])//1000)}).', inline = True)
-            webhook.add_embed(embed)
-            await webhook.post()
-            #return b'error: ban'
+    #     if (int(mp_args['st'])//1000) < int(length) and int(mp_args['x']) == 0 and int(mp_args['ft']) == 0:
+    #         log(f'Beatmap mirror length: {length} vs player length {(int(mp_args["st"])//1000)} (Potential timewarp user: {s.player})', Ansi.LRED)
+    #         #log(f'{s.player} banned for submitting a score with timewarp on gm {s.mode!r}.', Ansi.LRED)
+    #         #await s.player.ban(glob.bot, f'[{s.mode!r}] autoban for timewarp')
+    #         webhook_url = glob.config.webhooks['audit-log']
+    #         webhook = Webhook(url=webhook_url)
+    #         embed = Embed(title = f'New flagged user')
+    #         embed.set_author(url = f"https://{glob.config.domain}/u/{s.player.id}", name = s.player.name, icon_url = f"http://a.{glob.config.domain}/{s.player.id}")
+    #         thumb_url = f'http://a.{glob.config.domain}/1'
+    #         embed.set_thumbnail(url=thumb_url)
+    #         embed.add_field(name = 'Anticheat', value = f'{s.player.name} for potential timewarp (Beatmap mirror length {length} vs player length {(int(mp_args["st"])//1000)}).', inline = True)
+    #         webhook.add_embed(embed)
+    #         await webhook.post()
+    #         #return b'error: ban'
+    #     elif int(mp_args['x']) == 0 and int(mp_args['ft']) == 0:
+    #         log(f'valid score, st = {(int(mp_args["st"])//1000)} vs length {int(length)}')
+    #     else:
+    #         log('invalid score')
 
     # we should update their activity no matter
     # what the result of the score submission is.
@@ -2075,128 +2089,11 @@ async def osuBMSubmitGetID(conn: Connection) -> Optional[bytes]:
 """
 
 """ /api/ Handlers """
-# TODO: add oauth so we can do more stuff owo..
-# also, give me ideas for api things
-# POST /api/set_avatar
-
-@domain.route('/api/get_online')
+@domain.route('/gapi/get_online')
 async def api_get_online(conn: Connection) -> Optional[bytes]:
     """Get the current amount of online players."""
     # TODO: perhaps add peak(s)? (24h, 5d, 3w, etc.)
     return f'{{"online":{len(glob.players) - 1}}}'.encode()
-
-@domain.route('/api/get_user')
-async def api_get_user(conn: Connection) -> Optional[bytes]:
-    """Get user info/stats from a specified name or id."""
-    if 'name' not in conn.args and 'id' not in conn.args:
-        return (400, b'Must provide either id or name!')
-
-    if (
-        'scope' not in conn.args or
-        conn.args['scope'] not in ('info', 'stats')
-    ):
-        return (400, b'Must provide scope (info/stats).')
-
-    if 'id' in conn.args:
-        if not conn.args['id'].isdecimal():
-            return (400, b'Invalid player id.')
-
-        pid = conn.args['id']
-    else:
-        if not 2 <= len(name := unquote(conn.args['name'])) < 16:
-            return (400, b'Invalid player name.')
-
-        # get their id from username.
-        pid = await glob.db.fetch(
-            'SELECT id FROM users '
-            'WHERE safe_name = %s',
-            [name]
-        )
-
-        if not pid:
-            return (404, b'User not found.')
-
-        pid = pid['id']
-
-    if conn.args['scope'] == 'info':
-        # return user info
-        query = ('SELECT id, name, safe_name, '
-                 'priv, country, silence_end ' # silence_end public?
-                 'FROM users WHERE id = %s')
-    else:
-        # return user stats
-        query = 'SELECT * FROM stats WHERE id = %s'
-
-    res = await glob.db.fetch(query, [pid])
-    return orjson.dumps(res) if res else b'User not found.'
-
-@domain.route('/api/get_scores')
-async def api_get_scores(conn: Connection) -> Optional[bytes]:
-    if 'name' not in conn.args and 'id' not in conn.args:
-        return (400, b'Must provide either player id or name!')
-
-    if 'id' in conn.args:
-        if not conn.args['id'].isdecimal():
-            return (400, b'Invalid player id.')
-
-        pid = conn.args['id']
-    else:
-        if not 2 <= len(name := unquote(conn.args['name'])) < 16:
-            return (400, b'Invalid player name.')
-
-        # get their id from username.
-        pid = await glob.db.fetch(
-            'SELECT id FROM users '
-            'WHERE safe_name = %s',
-            [name]
-        )
-
-        if not pid:
-            return (404, b'User not found.')
-
-        pid = pid['id']
-
-    if 'mods' in conn.args:
-        if not conn.args['mods'].isdecimal():
-            return (400, b'Invalid mods.')
-
-        mods = Mods(int(conn.args['mods']))
-
-        if mods & Mods.RELAX:
-            mods &= ~Mods.RELAX
-            table = 'scores_rx'
-        elif mods & Mods.AUTOPILOT:
-            mods &= ~Mods.AUTOPILOT
-            table = 'scores_ap'
-        else:
-            table = 'scores_vn'
-    else:
-        mods = Mods.NOMOD
-        table = 'scores_vn'
-
-    if 'limit' in conn.args:
-        if not conn.args['limit'].isdecimal():
-            return (400, b'Invalid limit.')
-
-        limit = min(int(conn.args['limit']), 100)
-    else:
-        limit = 100
-
-    query = ['SELECT id, map_md5, score, pp, acc, max_combo, mods, '
-             'n300, n100, n50, nmiss, ngeki, nkatu, grade, status, '
-             'mode, play_time, time_elapsed, userid, perfect '
-             f'FROM {table} WHERE userid = %s']
-    params = [pid]
-
-    if mods:
-        query.append('WHERE mods & %s > 0')
-        params.append(int(mods))
-
-    query.append('ORDER BY id DESC LIMIT %s')
-    params.append(limit)
-
-    res = await glob.db.fetchall(' '.join(query), params)
-    return orjson.dumps(res) if res else b'No scores found.'
 
 """ Misc handlers """
 
@@ -2219,7 +2116,7 @@ async def get_osz(conn: Connection) -> Optional[bytes]:
         if not USING_CHIMU:
             mirror_url = f'{glob.config.mirror}/d/{conn.path[3:]}'
         else:
-            mirror_url = f'https://chimu.moe/d/{conn.path[3:]}'
+            mirror_url = f'https://api.chimu.moe/v1/download/{conn.path[3:]}'
     else:
         mirror_url = f'https://beatconnect.io/b/{conn.path[3:]}'
     conn.add_resp_header(f'Location: {mirror_url}')

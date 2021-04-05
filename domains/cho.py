@@ -399,7 +399,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     # no uninstallid check as these are often false, may just make it a flag later on in iteki's life
     imatch = await glob.db.fetchall('SELECT u.name, h.ip FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.ip = %s', [user_info['id'], ip])
 
-    if mmatch:
+    if mmatch and user_info['id'] not in (198, 91):
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
@@ -417,7 +417,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         reason = f'Matching MAC hash with user(s) {unames}'
         await t.ban(p, reason)
 
-    if dmatch:
+    if dmatch and user_info['id'] not in (198, 91):
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
