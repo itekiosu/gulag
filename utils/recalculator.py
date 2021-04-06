@@ -70,15 +70,18 @@ class PPCalculator:
         """Perform the calculations with the current state, returning (pp, sr)."""
         if self.mode_vn == 0:
             # python implementation for oppai (std only), a bit slower but maybe less cursed...
-            import pyttanko
+            from utils import pyttanko
             p = pyttanko.parser()
-            bmap = pyytanko.beatmap()
+            bmap = pyttanko.beatmap()
             stars = pyttanko.diff_calc()
 
-            stars.calc(self.file, self.pp_attrs["mods"])
+            with open(self.file, "r") as f:
+                p.map(f, bmap=bmap)
+
+            stars.calc(bmap, self.pp_attrs["mods"])
 
             # thank you pyttanko for maybe the most annoying requirements, please just let me pass accuracy instead of 300/100/50...
-            pp, _, _, _, _ = pyttanko.ppv2(stars.aim, stars.speed, bmap=self.file, mods=self.pp_attrs["mode"], n300=self.pp_attrs["n300"], n100=self.pp_attrs["n100"], n50=self.pp_attrs["n50"], nmiss=self.pp_attrs["nmiss"], combo=self.pp_attrs["combo"])
+            pp, _, _, _, _ = pyttanko.ppv2(stars.aim, stars.speed, bmap=bmap, mods=self.pp_attrs["mods"], n300=self.pp_attrs["n300"], n100=self.pp_attrs["n100"], n50=self.pp_attrs["n50"], nmiss=self.pp_attrs["nmiss"], combo=self.pp_attrs["combo"])
             
             return pp, stars.total
         elif self.mode_vn == 1:

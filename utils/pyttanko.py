@@ -1382,12 +1382,12 @@ def ppv2(
         total *= {
             1808605: 0.7, # louder than steel nerf (rx only)
             1821147: 0.6 # over the top nerf (rx only)
-        }.get(beatmap_id, 0.0)
+        }.get(beatmap_id, 1.0)
     else:
         total *= {
             1945175: 0.75, # keitaro's hidamari no uta nerf (vanilla only - relax pp system already serves this map justice)
             1741498: 0.75, # seto's hidamari no uta nerf (vanilla only - relax pp system already serves this map justice)
             2067473: 0.75 # cellina's hidamari no uta (remake ver) nerf (vanilla only - relax pp system already serves this map justice)
-        }.get(beatmap_id, 0.0)
+        }.get(beatmap_id, 1.0)
 
     return (total, aim, speed, acc, accuracy * 100.0)

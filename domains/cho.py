@@ -407,6 +407,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         thumb_url = f'https://a.{glob.config.domain}/1'
         embed.set_thumbnail(url=thumb_url)
         for a in mmatch:
+            log(a)
             unames = []
             unames.append(a['name'])
         embed.add_field(name = 'New banned user', value = f"{user_info['name']} has been banned for a MAC match ({mmatch['adapters']}) with user(s) {unames}", inline = True)
@@ -425,6 +426,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         thumb_url = f'https://a.{glob.config.domain}/1'
         embed.set_thumbnail(url=thumb_url)
         for a in dmatch:
+            log(a)
             unames = []
             unames.append(a['name'])
         embed.add_field(name = 'New banned user', value = f"{user_info['name']} has been banned for a disk serial match ({dmatch['disk_serial']}) with user(s) {unames}", inline = True)
@@ -444,6 +446,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         thumb_url = f'https://a.{glob.config.domain}/1'
         embed.set_thumbnail(url=thumb_url)
         for a in imatch:
+            log(a)
             unames = []
             unames.append(a['name'])
         embed.add_field(name = 'New flagged user', value = f"{user_info['name']} has been flagged for an IP match ({imatch['ip']}) with user(s) {unames}", inline = True)

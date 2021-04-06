@@ -340,8 +340,15 @@ class Score:
     # whether it's beneficial or not.
     async def calc_diff(self) -> tuple[float, float]:
         """Calculate PP and star rating for our score."""
-        # std and taiko.
-        if self.mode.as_vanilla in (0, 1):
+        # std.
+        if self.mode.as_vanilla == 0:
+            ppcalc = await PPCalculator.from_id(
+                self.bmap.id, mods=self.mods, combo=self.max_combo,
+                nmiss=self.nmiss, mode=self.mode, acc=self.acc,
+                n300=self.n300, n100=self.n100, n50=self.n50
+            )
+        # taiko.
+        elif self.mode.as_vanilla == 1:
             ppcalc = await PPCalculator.from_id(
                 self.bmap.id, mods=self.mods, combo=self.max_combo,
                 nmiss=self.nmiss, mode=self.mode, acc=self.acc
