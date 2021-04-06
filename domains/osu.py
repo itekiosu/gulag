@@ -823,14 +823,11 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         if s.acc < 97.7:
             s.pp = float(s.pp * 0.97)
 
-    # what the fuck are you making me do oppai
-    s.pp = float(f"{float(str(s.pp).replace('+', '').replace('e', '').replace('-', '')):.3f}")
-
     if not s.player.priv & Privileges.Whitelisted:
         # Get the PP cap for the current context.
         pp_cap = autoban_pp[s.mode][s.mods & Mods.FLASHLIGHT != 0]
 
-        if s.pp > pp_cap and s.bmap.status == RankedStatus.Ranked and s.passed:
+        if s.pp > pp_cap and s.passed:
             log(f'{s.player} banned for submitting '
                 f'{s.pp:.2f} score on gm {s.mode!r}.',
                 Ansi.LRED)
@@ -2119,7 +2116,7 @@ async def get_osz(conn: Connection) -> Optional[bytes]:
             mirror_url = f'https://api.chimu.moe/v1/download/{conn.path[3:]}'
     else:
         mirror_url = f'https://beatconnect.io/b/{conn.path[3:]}'
-    conn.add_resp_header(f'Location: {mirror_url}')
+    conn.resp_headers['Location'] = mirror_url
     return (301, b'')
 
 BEATMAPS_PATH = Path.cwd() / '.data/osu'

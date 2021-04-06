@@ -36,7 +36,7 @@ async def get_avatar(conn: Connection) -> Optional[bytes]:
         path = DEFAULT_AVATAR
 
     ext = 'png' if path.suffix == '.png' else 'jpeg'
-    conn.add_resp_header(f'Content-Type: image/{ext}')
+    conn.resp_headers['Content-Type'] = f'image/{ext}'
     return path.read_bytes()
 
 BANNERS_PATH = Path.cwd() / '.data/banners'
@@ -64,5 +64,5 @@ async def get_banner(conn: Connection) -> Optional[bytes]:
         path = DEFAULT_BANNER
 
     ext = 'png' if path.suffix == '.png' else 'jpeg'
-    conn.add_resp_header(f'Content-Type: image/{ext}')
+    conn.resp_headers['Content-Type'] = f'image/{ext}'
     return path.read_bytes()

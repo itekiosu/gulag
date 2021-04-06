@@ -8,8 +8,6 @@ import orjson
 from cmyui import Ansi
 from cmyui import log
 
-from maniera.calculator import Maniera
-
 from constants.gamemodes import GameMode
 from constants.mods import Mods
 
@@ -70,14 +68,21 @@ class PPCalculator:
 
     async def perform(self) -> tuple[float, float]:
         """Perform the calculations with the current state, returning (pp, sr)."""
+        if self.mode_vn == 0:
+            # python implementation for oppai (std only), a bit slower but maybe less cursed...
+            import pyttanko
+            p = pyttanko.parser()
+            bmap = pyytanko.beatmap()
+            stars = pyttanko.diff_calc()
 
-        # std and taiko.
-        if self.mode_vn in (0, 1):
-            # TODO: PLEASE rewrite this with c bindings,
-            # add ways to get specific stuff like aim pp
+            stars.calc(self.file, self.pp_attrs["mods"])
 
-            # for now, we'll generate a bash command and
-            # use subprocess to do the calculations (yikes).
+            # thank you pyttanko for maybe the most annoying requirements, please just let me pass accuracy instead of 300/100/50...
+            pp, _, _, _, _ = pyttanko.ppv2(stars.aim, stars.speed, bmap=self.file, mods=self.pp_attrs["mode"], n300=self.pp_attrs["n300"], n100=self.pp_attrs["n100"], n50=self.pp_attrs["n50"], nmiss=self.pp_attrs["nmiss"], combo=self.pp_attrs["combo"])
+            
+            return pp, stars.total
+        elif self.mode_vn == 1:
+            # normal oppai for taiko bc pyttanko gay
             cmd = [f'sudo ./oppai-ng/oppai {self.file}']
 
             if 'mods' in self.pp_attrs:
@@ -89,10 +94,7 @@ class PPCalculator:
             if 'acc' in self.pp_attrs:
                 cmd.append(f'{self.pp_attrs["acc"]:.4f}%')
 
-            if self.mode_vn != 0:
-                cmd.append(f'-{self.mode_vn}')
-                if self.mode_vn == 1:
-                    cmd.append('-otaiko')
+            cmd.append('-m1')
 
             # XXX: could probably use binary to save a bit
             # of time.. but in reality i should just write
@@ -117,9 +119,8 @@ class PPCalculator:
                 return output['pp'], output['stars']
             except:
                 return (0.0, 0.0)
-        
-        # mania.
         if self.mode_vn == 3:
+            #mania.
             from maniera.calculator import Maniera
             if 'score' not in self.pp_attrs:
                 log('Err: pp calculator needs score for mania.', Ansi.LRED)

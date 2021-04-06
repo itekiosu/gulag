@@ -79,7 +79,7 @@ async def bancho_handler(conn: Connection) -> bytes:
                 conn.body, conn.headers['X-Real-IP'], conn.headers
             )
 
-        conn.add_resp_header(f'cho-token: {token}')
+        conn.resp_headers['cho-token'] = token
         return resp
 
     # get the player from the specified osu token.
@@ -112,7 +112,7 @@ async def bancho_handler(conn: Connection) -> bytes:
         # read all queued packets into stream
         resp += player.dequeue()
 
-    conn.add_resp_header('Content-Type: text/html; charset=UTF-8')
+    conn.resp_headers['Content-Type'] = 'text/html; charset=UTF-8'
     resp = bytes(resp)
 
     # even if the packet is empty, we have to
@@ -427,7 +427,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         for a in dmatch:
             unames = []
             unames.append(a['name'])
-        embed.add_field(name = 'New banned user', value = f"{user_info['name']} has been banned for a disk serial match ({dmatch['disk_serial']}) with user(s) {unnames}", inline = True)
+        embed.add_field(name = 'New banned user', value = f"{user_info['name']} has been banned for a disk serial match ({dmatch['disk_serial']}) with user(s) {unames}", inline = True)
         webhook.add_embed(embed)
         await webhook.post()
         if not (t := await glob.players.get(name=username, sql=True)):
@@ -446,7 +446,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         for a in imatch:
             unames = []
             unames.append(a['name'])
-        embed.add_field(name = 'New flagged user', value = f"{user_info['name']} has been flagged for an IP match ({imatch['ip']}) with user(s) {unnames}", inline = True)
+        embed.add_field(name = 'New flagged user', value = f"{user_info['name']} has been flagged for an IP match ({imatch['ip']}) with user(s) {unames}", inline = True)
         webhook.add_embed(embed)
         await webhook.post()
 
