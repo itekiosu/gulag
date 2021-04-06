@@ -397,7 +397,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     mmatch = await glob.db.fetchall('SELECT u.name, h.adapters FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.adapters = %s', [user_info['id'], client_hashes[1]])
     dmatch = await glob.db.fetchall('SELECT u.name, h.disk_serial FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.disk_serial = %s', [user_info['id'], client_hashes[3]])
     # no uninstallid check as these are often false, may just make it a flag later on in iteki's life
-    imatch = await glob.db.fetchall('SELECT u.name, h.ip FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.ip = %s', [user_info['id'], ip])
+    imatch = await glob.db.fetchall('SELECT u.name, h.ip FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.ip = %s AND h.ip != "34.105.200.192"', [user_info['id'], ip])
 
     if mmatch and user_info['id'] not in (198, 91):
         webhook_url = glob.config.webhooks['audit-log']
@@ -406,11 +406,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
         thumb_url = f'https://a.{glob.config.domain}/1'
         embed.set_thumbnail(url=thumb_url)
-        for a in mmatch:
-            log(a)
-            unames = []
-            unames.append(a['name'])
-        embed.add_field(name = 'New banned user', value = f"{user_info['name']} has been banned for a MAC match ({mmatch['adapters']}) with user(s) {unames}", inline = True)
+        embed.add_field(name = 'New banned user', value = f"{user_info['name']} has been banned for a MAC match ({mmatch})", inline = True)
         webhook.add_embed(embed)
         await webhook.post()
         if not (t := await glob.players.get(name=username, sql=True)):
@@ -425,11 +421,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
         thumb_url = f'https://a.{glob.config.domain}/1'
         embed.set_thumbnail(url=thumb_url)
-        for a in dmatch:
-            log(a)
-            unames = []
-            unames.append(a['name'])
-        embed.add_field(name = 'New banned user', value = f"{user_info['name']} has been banned for a disk serial match ({dmatch['disk_serial']}) with user(s) {unames}", inline = True)
+        embed.add_field(name = 'New banned user', value = f"{user_info['name']} has been banned for a disk serial match ({dmatch})", inline = True)
         webhook.add_embed(embed)
         await webhook.post()
         if not (t := await glob.players.get(name=username, sql=True)):
@@ -445,11 +437,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
         thumb_url = f'https://a.{glob.config.domain}/1'
         embed.set_thumbnail(url=thumb_url)
-        for a in imatch:
-            log(a)
-            unames = []
-            unames.append(a['name'])
-        embed.add_field(name = 'New flagged user', value = f"{user_info['name']} has been flagged for an IP match ({imatch['ip']}) with user(s) {unames}", inline = True)
+        embed.add_field(name = 'New flagged user', value = f"{user_info['name']} has been flagged for an IP match ({imatch})", inline = True)
         webhook.add_embed(embed)
         await webhook.post()
 
