@@ -25,7 +25,7 @@ class PPCalculator:
         self.pp_attrs = pp_attrs
 
         if 'mode_vn' in pp_attrs:
-            self.mode_vn = ppattrs['mode_vn']
+            self.mode_vn = pp_attrs['mode_vn']
         else:
             self.mode_vn = 0
 
@@ -98,6 +98,7 @@ class PPCalculator:
                 cmd.append(f'{self.pp_attrs["acc"]:.4f}%')
 
             cmd.append('-m1')
+            cmd.append('-taiko')
 
             # XXX: could probably use binary to save a bit
             # of time.. but in reality i should just write

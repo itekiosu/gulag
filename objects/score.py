@@ -346,7 +346,7 @@ class Score:
                 ppcalc = await PPCalculator.from_id(
                     self.bmap.id, mods=self.mods, combo=self.max_combo,
                     nmiss=self.nmiss, mode=self.mode, acc=self.acc,
-                    n300=self.n300, n100=self.n100, n50=self.n50
+                    n300=self.n300, n100=self.n100, n50=self.n50, mode_vn=self.mode.as_vanilla
                 )
             except:
                 return (0.0, 0.0)
@@ -355,14 +355,14 @@ class Score:
         elif self.mode.as_vanilla == 1:
             ppcalc = await PPCalculator.from_id(
                 self.bmap.id, mods=self.mods, combo=self.max_combo,
-                nmiss=self.nmiss, mode=self.mode, acc=self.acc
+                nmiss=self.nmiss, mode=self.mode, acc=self.acc, mode_vn=self.mode.as_vanilla
             )
 
         # mania.
         elif self.mode.as_vanilla == 3:
             ppcalc = await PPCalculator.from_id(
                 self.bmap.id, mods=self.mods, score=self.score, 
-                mode=self.mode
+                mode=self.mode, mode_vn=self.mode.as_vanilla
             )
 
         # TODO: catch support.
