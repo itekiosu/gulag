@@ -412,12 +412,13 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
 
     exceptid = e['exceptid']
     exceptip = e['exceptip']
+
     mmatch = await glob.db.fetchall('SELECT u.name, h.adapters FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.adapters = %s', [user_info['id'], client_hashes[1]])
     dmatch = await glob.db.fetchall('SELECT u.name, h.disk_serial FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.disk_serial = %s', [user_info['id'], client_hashes[3]])
     # no uninstallid check as these are often false, may just make it a flag later on in iteki's life
     imatch = await glob.db.fetchall('SELECT u.name, h.ip FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.ip = %s AND h.ip != "34.105.200.192"', [user_info['id'], ip])
 
-    if mmatch and user_info['id'] not in exceptid:
+    if mmatch and str(user_info['id']) not in exceptid:
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
@@ -432,7 +433,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         reason = f'Matching MAC hash with user ({mmatch})'
         await t.ban(p, reason)
 
-    if dmatch and user_info['id'] not in exceptid:
+    if dmatch and str(user_info['id']) not in exceptid:
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
@@ -448,7 +449,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         await t.ban(p, reason)
 
     # only flag for an IP match as there is often very good reasons for this happening and we don't want often false bans :c
-    if imatch and ip not in exceptip:
+    if imatch and str(ip) not in exceptip:
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
