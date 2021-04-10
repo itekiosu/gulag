@@ -411,7 +411,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         await webhook.post()
         if not (t := await glob.players.get(name=username, sql=True)):
             return f'"{username}" not found.'
-        reason = f'Matching MAC hash with user(s) {unames}'
+        reason = f'Matching MAC hash with user ({mmatch})'
         await t.ban(p, reason)
 
     if dmatch and user_info['id'] not in (198, 91, 268):
@@ -426,7 +426,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         await webhook.post()
         if not (t := await glob.players.get(name=username, sql=True)):
             return f'"{username}" not found.'
-        reason = f'Matching disk serial with user {mmatch["name"]}'
+        reason = f'Matching disk serial with user ({dmatch})'
         await t.ban(p, reason)
 
     # only flag for an IP match as there is often very good reasons for this happening and we don't want often false bans :c
