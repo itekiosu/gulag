@@ -1376,7 +1376,8 @@ async def getScores(p: 'Player', conn: Connection) -> Optional[bytes]:
         "s.max_combo, s.n50, s.n100, s.n300, "
         "s.nmiss, s.nkatu, s.ngeki, s.perfect, s.mods, "
         "s.play_time time, u.id userid, "
-        "COALESCE(CONCAT('[', c.tag, '] ', u.name), u.name) AS name "
+        "u.name name, "
+        "c.tag tag "
         f"FROM {table} s "
         "LEFT JOIN users u ON u.id = s.userid "
         "LEFT JOIN clans c ON c.id = u.clan_id "
@@ -1401,6 +1402,10 @@ async def getScores(p: 'Player', conn: Connection) -> Optional[bytes]:
     query.append(f'ORDER BY _score DESC LIMIT 50')
 
     scores = await glob.db.fetchall(' '.join(query), params)
+
+    for row in scores:
+        if row['name'] != p.name and row['tag'] is not None:
+            row['name'] = f"[{row['tag']}] {row['name']}"
 
     res: list[str] = []
 
@@ -1462,7 +1467,7 @@ async def getScores(p: 'Player', conn: Connection) -> Optional[bytes]:
         res.append(
             score_fmt.format(
                 **p_best,
-                name = p.full_name, userid = p.id,
+                name = p.name, userid = p.id,
                 score = int(p_best['_score']),
                 has_replay = '1', rank = p_best_rank
             )

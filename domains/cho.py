@@ -399,7 +399,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     # no uninstallid check as these are often false, may just make it a flag later on in iteki's life
     imatch = await glob.db.fetchall('SELECT u.name, h.ip FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.ip = %s AND h.ip != "34.105.200.192"', [user_info['id'], ip])
 
-    if mmatch and user_info['id'] not in (198, 91):
+    if mmatch and user_info['id'] not in (198, 91, 268):
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
@@ -414,7 +414,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         reason = f'Matching MAC hash with user(s) {unames}'
         await t.ban(p, reason)
 
-    if dmatch and user_info['id'] not in (198, 91):
+    if dmatch and user_info['id'] not in (198, 91, 268):
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
@@ -513,7 +513,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
             1
         )
 
-    if p.priv & Privileges.Nominator and not p.priv & Privileges.Staff:
+    if p.priv & Privileges.Nominator and not p.priv & Privileges.Dangerous:
         request = await glob.db.fetch('SELECT COUNT(id) AS count FROM requests')
         if int(request["count"]) > 0:
             data += packets.notification(f'There is {request["count"]} outstanding map requests!')
@@ -580,22 +580,21 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     data += packets.silenceEnd(p.remaining_silence)
 
     # thank u osu for doing this by username rather than id
-    # comment out for now
-    # query = ('SELECT m.`msg`, m.`time`, m.`from_id`, '
-    #          '(SELECT name FROM users WHERE id = m.`from_id`) AS `from`, '
-    #          '(SELECT name FROM users WHERE id = m.`to_id`) AS `to` '
-    #          'FROM `mail` m WHERE m.`to_id` = %s AND m.`read` = 0')
+    query = ('SELECT m.`msg`, m.`time`, m.`from_id`, '
+        '(SELECT name FROM users WHERE id = m.`from_id`) AS `from`, '
+        '(SELECT name FROM users WHERE id = m.`to_id`) AS `to` '
+        'FROM `mail` m WHERE m.`to_id` = %s AND m.`read` = 0')
 
-    # # the player may have been sent mail while offline,
-    # # enqueue any messages from their respective authors.
-    # async for msg in glob.db.iterall(query, [p.id]):
-    #     msg_time = dt.fromtimestamp(msg['time'])
-    #     msg_ts = f'[{msg_time:%a %b %d @ %H:%M%p}] {msg["msg"]}'
+    # the player may have been sent mail while offline,
+    # enqueue any messages from their respective authors.
+    async for msg in glob.db.iterall(query, [p.id]):
+        msg_time = dt.fromtimestamp(msg['time'])
+        msg_ts = f'[{msg_time:%a %b %d @ %H:%M%p}] {msg["msg"]}'
 
-    #     data += packets.sendMessage(
-    #         msg['from'], msg_ts,
-    #         msg['to'], msg['from_id']
-    #     )
+        data += packets.sendMessage(
+            msg['from'], msg_ts,
+            msg['to'], msg['from_id']
+        )
 
     # TODO: enqueue ingame admin panel to staff members.
     """

@@ -342,11 +342,15 @@ class Score:
         """Calculate PP and star rating for our score."""
         # std.
         if self.mode.as_vanilla == 0:
-            ppcalc = await PPCalculator.from_id(
-                self.bmap.id, mods=self.mods, combo=self.max_combo,
-                nmiss=self.nmiss, mode=self.mode, acc=self.acc,
-                n300=self.n300, n100=self.n100, n50=self.n50
-            )
+            try:
+                ppcalc = await PPCalculator.from_id(
+                    self.bmap.id, mods=self.mods, combo=self.max_combo,
+                    nmiss=self.nmiss, mode=self.mode, acc=self.acc,
+                    n300=self.n300, n100=self.n100, n50=self.n50
+                )
+            except:
+                return (0.0, 0.0)
+
         # taiko.
         elif self.mode.as_vanilla == 1:
             ppcalc = await PPCalculator.from_id(
