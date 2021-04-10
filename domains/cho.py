@@ -276,7 +276,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
 
     if 'ainu' in headers:
         if not (t := await glob.players.get(name=username, sql=True)):
-            return f'"{username}" not found.'
+            return packets.userID(-1), 'no'
         reason = 'Cheat client found.'
         await t.ban(p, reason)
 
@@ -285,12 +285,12 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     if len(s := s[2].split('|')) != 5:
         return packets.userID(-2), 'no'
 
-    e = await glob.db.fetch('SELECT unsupver, banver FROM server_stats')
+    e = await glob.db.fetch('SELECT unsupver, banver, exceptid, exceptip FROM server_stats')
     unsupvers = e['unsupver']
     banvers = e['banver']
     if s[0] in banvers:
         if not (t := await glob.players.get(name=username, sql=True)):
-            return f'"{username}" not found.'
+            return packets.userID(-1), 'no'
         reason = 'Cheat client found.'
         await t.ban(p, reason)
 
@@ -333,11 +333,6 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     # [4]: md5(uniqueid2) (disk signature/serial num)
     client_hashes = s[3].split(':')[:-1]
     client_hashes.pop(1) # no need for non-md5 adapters
-    if client_hashes in ("f11423b10398dfbd7d460ab49615e997", "0d9a67a7d3ba6cd75a4f496c9898c59d"):
-        if not (t := await glob.players.get(name=username, sql=True)):
-            return f'"{username}" not found.'
-        reason = 'Cheat client found.'
-        await t.ban(p, reason)
 
     del p
 
@@ -392,14 +387,37 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         [user_info['id'], s[0], ip, *client_hashes]
     )
 
+    try:
+        from utils.private.login_check import cheat
+        cheat = await cheat(client_hashes[0], s[0])
+        if cheat[0] == "ban":
+            if not (t := await glob.players.get(name=username, sql=True)):
+                return packets.userID(-1), 'no'
+            reason = cheat[1]
+            await t.ban(p, reason)
+        elif cheat[0] == "flag":
+            webhook_url = glob.config.webhooks['audit-log']
+            webhook = Webhook(url=webhook_url)
+            embed = Embed(title = f'')
+            embed.set_author(url = f"https://{glob.config.domain}/u/{user_info['id']}", name = username, icon_url = f"https://a.{glob.config.domain}/{user_info['id']}")
+            thumb_url = f'https://a.{glob.config.domain}/1'
+            embed.set_thumbnail(url=thumb_url)
+            embed.add_field(name = 'New flagged user', value = f"{user_info['name']} has been flagged for potentially using a cheat client ({cheat[1]})", inline = True)
+            webhook.add_embed(embed)
+            await webhook.post()
+    except ImportError:
+        pass
+
     # TODO: runningunderwine support
 
+    exceptid = e['exceptid']
+    exceptip = e['exceptip']
     mmatch = await glob.db.fetchall('SELECT u.name, h.adapters FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.adapters = %s', [user_info['id'], client_hashes[1]])
     dmatch = await glob.db.fetchall('SELECT u.name, h.disk_serial FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.disk_serial = %s', [user_info['id'], client_hashes[3]])
     # no uninstallid check as these are often false, may just make it a flag later on in iteki's life
     imatch = await glob.db.fetchall('SELECT u.name, h.ip FROM client_hashes h INNER JOIN users u ON h.userid = u.id WHERE h.userid != %s AND h.ip = %s AND h.ip != "34.105.200.192"', [user_info['id'], ip])
 
-    if mmatch and user_info['id'] not in (198, 91, 268):
+    if mmatch and user_info['id'] not in exceptid:
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
@@ -414,7 +432,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         reason = f'Matching MAC hash with user ({mmatch})'
         await t.ban(p, reason)
 
-    if dmatch and user_info['id'] not in (198, 91, 268):
+    if dmatch and user_info['id'] not in exceptid:
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
@@ -430,7 +448,7 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
         await t.ban(p, reason)
 
     # only flag for an IP match as there is often very good reasons for this happening and we don't want often false bans :c
-    if imatch:
+    if imatch and ip not in exceptip:
         webhook_url = glob.config.webhooks['audit-log']
         webhook = Webhook(url=webhook_url)
         embed = Embed(title = f'')
