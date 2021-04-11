@@ -872,18 +872,6 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         webhook.add_embed(embed)
         await webhook.post()
         await s.player.freeze(glob.bot, f'set 500pp+ play without being verified (Autofreeze).' )
-    elif s.pp > 600 and int(e['verified']) and not s.mods & Mods.RELAX and s.mode == 0 and s.passed:
-        log(f'{s.player} frozen for submitting '
-            f'{s.pp:.2f} score on gm {s.mode!r}.',
-            Ansi.LRED)
-        webhook_url = glob.config.webhooks['audit-log']
-        webhook = Webhook(url=webhook_url)
-        embed = Embed(title = f'')
-        embed.set_author(url = f"https://{glob.config.domain}/u/1", name = 'Anticheat', icon_url = f"https://a.{glob.config.domain}/1")
-        embed.add_field(name = 'New frozen user', value = f"{s.player} set a play above 600pp while verified. This user has been auto-frozen as a result!", inline = True)
-        webhook.add_embed(embed)
-        await webhook.post()
-        await s.player.freeze(glob.bot, f'set 600pp+ play while verified (Autofreeze).' )
 
     s.id = await glob.db.execute(
         f'INSERT INTO {table} VALUES (NULL, '
