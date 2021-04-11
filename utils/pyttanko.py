@@ -230,6 +230,7 @@ class beatmap:
         self.artist_unicode = ""
         self.creator = ""
         self.version = ""
+        self.beatmap_id = -1
 
         self.ncircles = self.nsliders = self.nspinners = 0
         self.hp = self.cs = self.od = 5
