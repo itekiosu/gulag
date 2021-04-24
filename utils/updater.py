@@ -81,6 +81,6 @@ class Updater:
 
         if module_ver < latest_ver:
             # package is not up to date; update it.
-            log(f'Updating cmyui_pkg (v{module_ver!r} -> '
-                                    f'v{latest_ver!r}).', Ansi.MAGENTA)
-            pip_main(['install', '-Uq', 'cmyui']) # Update quiet
+           # log(f'Updating cmyui_pkg (v{module_ver!r} -> '
+           #                         f'v{latest_ver!r}).', Ansi.MAGENTA)
+           # pip_main(['install', '-Uq', 'cmyui']) # Update quiet
