@@ -145,9 +145,9 @@ async def before_serving() -> None:
     await glob.db.connect(glob.config.mysql)
 
     # run the sql & submodule updater (uses http & db).
-    updater = Updater(glob.version)
-    await updater.run()
-    await updater.log_startup()
+    #updater = Updater(glob.version)
+    #await updater.run()
+    #await updater.log_startup()
 
     # cache many global collections/objects from sql,
     # such as channels, mappools, clans, bot, etc.
