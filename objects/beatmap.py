@@ -502,7 +502,7 @@ class Beatmap:
                         for table in ('scores_vn', 'scores_rx', 'scores_ap'):
                             await glob.db.execute(f'UPDATE {table} SET status = 0 WHERE map_md5 = %s', [api_md5])
                         # update map status in db
-                        await glob.db.execute('UPDATE maps SET status = %s WHERE id = %s', [api_status, map_id])
+                        await glob.db.execute('UPDATE maps SET status = %s WHERE id = %s', [int(api_status), int(map_id)])
                         # update status in beatmap cache;
                         # check if our map in cache
                         if api_md5 in glob.cache['beatmap']:
@@ -514,7 +514,7 @@ class Beatmap:
                             else:
                                 del glob.cache['beatmap'][api_md5]
 
-                        if glob.app.debug:
+                        if glob.config.debug:
                             log(f"Updated map {bmap['artist']} - {bmap['title']} [{bmap['version']}] from {current_status!s} to {api_status!s}", Ansi.GREEN)
                 else:
                     # update our last_check in db
@@ -540,13 +540,10 @@ class Beatmap:
         """Cache some common acc pp values for specified mods."""
         self.pp_cache[mods] = [0.0, 0.0, 0.0, 0.0, 0.0]
 
-        ppcalc = await PPCalculator.from_id(
-            self.id, mode=self.mode, mods=mods
-        )
-
         for idx, acc in enumerate((90, 95, 98, 99, 100)):
-            ppcalc.acc = acc
-
+            ppcalc = await PPCalculator.from_id(
+                self.id, mode=self.mode, mods=mods, acc=acc
+            )
             pp, _ = await ppcalc.perform() # don't need sr
             self.pp_cache[mods][idx] = pp
 

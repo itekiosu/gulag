@@ -33,6 +33,19 @@ gm_sql = (
     'ap_std'
 )
 
+pp_str = (
+    'osu',
+    'taiko',
+    'catch',
+    'mania',
+
+    'osu',
+    'osu',
+    'osu',
+
+    'osu'
+)
+
 class NPGameMode:
     vn_std   = 0
     vn_taiko = 1
@@ -102,6 +115,10 @@ class GameMode(IntEnum):
             return 0
 
         return self.value % 4
+
+    @property
+    def calc_mode(self) -> str:
+        return pp_str[self.value]
 
     def __repr__(self) -> str:
         return gm_str[self.value]

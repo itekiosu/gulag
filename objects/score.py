@@ -29,6 +29,25 @@ __all__ = (
     'Score'
 )
 
+def to_readable(m: int) -> str:
+    if not m: return 'NM'
+
+    r: List[str] = []
+    if m & Mods.NOFAIL:      r.append('NF')
+    if m & Mods.EASY:        r.append('EZ')
+    if m & Mods.HIDDEN:      r.append('HD')
+    if m & Mods.NIGHTCORE:   r.append('NC')
+    elif m & Mods.DOUBLETIME:  r.append('DT')
+    if m & Mods.HARDROCK:    r.append('HR')
+    if m & Mods.HALFTIME:    r.append('HT')
+    if m & Mods.FLASHLIGHT:  r.append('FL')
+    if m & Mods.SPUNOUT:     r.append('SO')
+    if m & Mods.RELAX:       r.append('RX')
+    if m & Mods.AUTOPILOT:       r.append('AP')
+    if m & Mods.TOUCHSCREEN: r.append('TD')
+    if m & Mods.SCOREV2:     r.append('V2')
+    return ''.join(r)
+
 @unique
 class Rank(IntEnum):
     XH = 0
@@ -289,6 +308,7 @@ class Score:
 
         s.perfect = data[11] == 'True'
         _grade = data[12] # letter grade
+
         s.mods = Mods(int(data[13]))
         s.passed = data[14] == 'True'
         s.mode = GameMode.from_params(int(data[15]), s.mods)
@@ -302,7 +322,6 @@ class Score:
         s.calc_accuracy()
 
         if s.bmap:
-            # ignore sr for now.
             s.pp, s.sr = await s.calc_diff()
 
             await s.calc_status()
@@ -340,34 +359,37 @@ class Score:
     # whether it's beneficial or not.
     async def calc_diff(self) -> tuple[float, float]:
         """Calculate PP and star rating for our score."""
+
+        mods = to_readable(self.mods)
+
         # std.
         if self.mode.as_vanilla == 0:
-            try:
-                ppcalc = await PPCalculator.from_id(
-                    self.bmap.id, mods=self.mods, combo=self.max_combo,
-                    nmiss=self.nmiss, mode=self.mode, acc=self.acc,
-                    n300=self.n300, n100=self.n100, n50=self.n50, mode_vn=self.mode.as_vanilla
-                )
-            except:
-                return (0.0, 0.0)
+            ppcalc = await PPCalculator.from_id(
+                self.bmap.id, mods=self.mods, combo=self.max_combo,
+                nmiss=self.nmiss, mode=self.mode, acc=self.acc,
+                n300=self.n300, n100=self.n100, n50=self.n50, mode_vn=self.mode.as_vanilla, mr=mods
+            )
 
         # taiko.
         elif self.mode.as_vanilla == 1:
             ppcalc = await PPCalculator.from_id(
                 self.bmap.id, mods=self.mods, combo=self.max_combo,
-                nmiss=self.nmiss, mode=self.mode, acc=self.acc, mode_vn=self.mode.as_vanilla
+                nmiss=self.nmiss, mode=self.mode, acc=self.acc, mode_vn=self.mode.as_vanilla, mr=mods
+            )
+
+        # catch.
+        elif self.mode.as_vanilla == 2:
+            ppcalc = await PPCalculator.from_id(
+                self.bmap.id, mods=self.mods, combo=self.max_combo,
+                nmiss=self.nmiss, mode=self.mode, acc=self.acc, mode_vn=self.mode.as_vanilla, mr=mods
             )
 
         # mania.
         elif self.mode.as_vanilla == 3:
             ppcalc = await PPCalculator.from_id(
                 self.bmap.id, mods=self.mods, score=self.score, 
-                mode=self.mode, mode_vn=self.mode.as_vanilla
+                mode=self.mode, mode_vn=self.mode.as_vanilla, mr=mods
             )
-
-        # TODO: catch support.
-        else:
-            return (0.0, 0.0)
         
         if not ppcalc:
             return (0.0, 0.0)

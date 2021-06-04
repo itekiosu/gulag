@@ -494,14 +494,6 @@ async def _requests(p: 'Player', c: Messageable, msg: Sequence[str]) -> str:
         title = e['title']
         intmode = e['mode']
         embed = f"[https://osu.{glob.config.domain}/{typem}/{request['map']} {artist} - {title} {diff}]"
-        rankm = await p.add_to_menu(rank)
-        lovem = await p.add_to_menu(love)
-        unrankm = await p.add_to_menu(unrank)
-        denym = await p.add_to_menu(deny)
-        embedr = f'[osu://dl/{rankm} Rank]'
-        embedl = f'[osu://dl/{lovem} Love]'
-        embedu = f'[osu://dl/{unrankm} Unrank]'
-        embedd = f"[osu://dl/{denym} Deny (don't change status)]"
         if intmode == 0:
             mode = 'osu!standard'
         elif intmode == 1:

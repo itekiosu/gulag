@@ -635,7 +635,7 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         return
     elif not s.bmap:
         # Map does not exist, most likely unsubmitted.
-        return b'error: no'
+        return b'error: beatmap'
     elif s.bmap.status == RankedStatus.Pending:
         # XXX: Perhaps will accept in the future,
         return b'error: no' # not now though.
@@ -842,24 +842,12 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
                 webhook.add_embed(embed)
                 await webhook.post()
             #return b'error: ban'
-    
-    e = await glob.db.fetch(f'SELECT verified FROM users WHERE id = {s.player.id}')
+
     if s.player.priv & Privileges.Whitelisted:
-        bypass = True
-    elif int(e['verified']):
         bypass = True
     else:
         bypass = False
-        
-    if s.pp > 400 and not bypass and not s.mods & Mods.RELAX and s.mode == 0 and s.passed:
-        webhook_url = glob.config.webhooks['audit-log']
-        webhook = Webhook(url=webhook_url)
-        embed = Embed(title = f'')
-        embed.set_author(url = f"https://{glob.config.domain}/u/1", name = 'Anticheat', icon_url = f"https://a.{glob.config.domain}/1")
-        embed.add_field(name = 'High pp play', value = f"{s.player} set a play above 400pp. No action has been taken as this isn't too high.\n\nThis webhook acts to send any 'high' pp play to make it easy to track potential cheaters", inline = True)
-        webhook.add_embed(embed)
-        await webhook.post()
-    
+
     if s.pp > 500 and not bypass and not s.mods & Mods.RELAX and s.mode == 0 and s.passed:
         log(f'{s.player} frozen for submitting '
             f'{s.pp:.2f} score on gm {s.mode!r}.',
@@ -872,6 +860,14 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
         webhook.add_embed(embed)
         await webhook.post()
         await s.player.freeze(glob.bot, f'set 500pp+ play without being verified (Autofreeze).' )
+    elif s.pp > 400 and not bypass and not s.mods & Mods.RELAX and s.mode == 0 and s.passed:
+        webhook_url = glob.config.webhooks['audit-log']
+        webhook = Webhook(url=webhook_url)
+        embed = Embed(title = f'')
+        embed.set_author(url = f"https://{glob.config.domain}/u/1", name = 'Anticheat', icon_url = f"https://a.{glob.config.domain}/1")
+        embed.add_field(name = 'High pp play', value = f"{s.player} set a play above 400pp. No action has been taken as this isn't too high.\n\nThis webhook acts to send any 'high' pp play to make it easy to track potential cheaters", inline = True)
+        webhook.add_embed(embed)
+        await webhook.post()
 
     s.id = await glob.db.execute(
         f'INSERT INTO {table} VALUES (NULL, '
@@ -971,14 +967,13 @@ async def osuSubmitModularSelector(conn: Connection) -> Optional[bytes]:
 
     """ score submission charts """
 
-    if s.status == SubmissionStatus.FAILED or s.mode >= GameMode.rx_std:
+    if s.status == SubmissionStatus.FAILED:
         # basically, the osu! client and the way bancho handles this
         # is dumb. if you submit a failed play on bancho, it will
         # still generate the charts and send it to the client, even
         # when the client can't (and doesn't use them).. so instead,
         # we'll send back an empty error, which will just tell the
         # client that the score submission process is complete.. lol
-        # (also no point on rx/ap since you can't see the charts atm xd)
         ret = b'error: no'
 
     else:

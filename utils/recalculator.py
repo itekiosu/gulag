@@ -5,6 +5,7 @@ from pathlib import Path
 
 import aiohttp
 import orjson
+import re
 from cmyui import Ansi
 from cmyui import log
 
@@ -68,7 +69,7 @@ class PPCalculator:
 
     async def perform(self) -> tuple[float, float]:
         """Perform the calculations with the current state, returning (pp, sr)."""
-        if self.mode_vn == 0:
+        if self.pp_attrs["mode"] > 3:
             # python implementation for oppai (std only), a bit slower but maybe less cursed...
             from utils import pyttanko
             p = pyttanko.parser()
@@ -84,60 +85,66 @@ class PPCalculator:
             pp, _, _, _, _ = pyttanko.ppv2(stars.aim, stars.speed, bmap=bmap, mods=self.pp_attrs["mods"], n300=self.pp_attrs["n300"], n100=self.pp_attrs["n100"], n50=self.pp_attrs["n50"], nmiss=self.pp_attrs["nmiss"], combo=self.pp_attrs["combo"])
             
             return pp, stars.total
-        elif self.mode_vn == 1:
-            # normal oppai for taiko bc pyttanko gay
-            cmd = [f'sudo ./oppai-ng/oppai {self.file}']
+        else:
+            cmd = [f'sudo ./osu-tools/compiled/PerformanceCalculator simulate {self.pp_attrs["mode"].calc_mode} {self.file}']
 
-            if 'mods' in self.pp_attrs:
-                cmd.append(f'+{self.pp_attrs["mods"]!r}')
-            if 'combo' in self.pp_attrs:
-                cmd.append(f'{self.pp_attrs["combo"]}x')
-            if 'nmiss' in self.pp_attrs:
-                cmd.append(f'{self.pp_attrs["nmiss"]}xM')
+            if self.mode_vn == 0 and "n50" in self.pp_attrs:
+                cmd.append(f'-M {self.pp_attrs["n50"]}')
+
+            if self.mode_vn == 3:
+                if 'score' in self.pp_attrs:
+                    cmd.append(f'-s {self.pp_attrs["score"]}')
+            else:
+                if 'combo' in self.pp_attrs:
+                    cmd.append(f'-c {self.pp_attrs["combo"]}')
+                if 'nmiss' in self.pp_attrs:
+                    cmd.append(f'-X {self.pp_attrs["nmiss"]}')
+
+            if self.mode_vn not in [2, 3]:
+                if 'n100' in self.pp_attrs:
+                    cmd.append(f'-G {self.pp_attrs["n100"]}')
+
             if 'acc' in self.pp_attrs:
-                cmd.append(f'{self.pp_attrs["acc"]:.4f}%')
+                cmd.append(f'-a {self.pp_attrs["acc"]}')
 
-            cmd.append('-m1')
-            cmd.append('-taiko')
+            if 'mr' in self.pp_attrs:
+                for mod in re.findall('.{1,2}', self.pp_attrs["mr"]):
+                    if mod != 'NM' and mod != 'V2':
+                        cmd.append(f'-m {mod}')
 
-            # XXX: could probably use binary to save a bit
-            # of time.. but in reality i should just write
-            # some bindings lmao this is so cursed overall
-            cmd.append('-ojson')
+            cmd.append('-j')
 
             # join & run the command
-            pipe = asyncio.subprocess.PIPE
-
-            proc = await asyncio.create_subprocess_shell(
-                ' '.join(cmd), stdout=pipe, stderr=pipe
+            pipe_calc = asyncio.subprocess.PIPE
+            proc_calc = await asyncio.create_subprocess_shell(
+                ' '.join(cmd), stdout=pipe_calc, stderr=pipe_calc
             )
 
-            stdout, _ = await proc.communicate() # stderr not needed
-            output = orjson.loads(stdout.decode())
+            cout, _ = await proc_calc.communicate() # stderr not needed
+            calc = orjson.loads(cout.decode())
 
-            if 'code' not in output or output['code'] != 200:
-                log(f"oppai-ng: {output['errstr']}", Ansi.LRED)
+            await proc_calc.wait() # wait for exit
 
-            await proc.wait() # wait for exit
-            try:
-                return output['pp'], output['stars']
-            except:
-                return (0.0, 0.0)
-        if self.mode_vn == 3:
-            #mania.
-            from maniera.calculator import Maniera
-            if 'score' not in self.pp_attrs:
-                log('Err: pp calculator needs score for mania.', Ansi.LRED)
-                return (0.0, 0.0)
+            # diff calc lawl
+            d = [f'sudo ./osu-tools/compiled/PerformanceCalculator difficulty {self.file}']
 
-            if 'mods' in self.pp_attrs:
-                mods = int(self.pp_attrs['mods'])
-            else:
-                mods = 0
+            d.append(f'--ruleset:{self.mode_vn}') # ruleset in case of converts xd
 
-            calc = Maniera(self.file, mods, self.pp_attrs['score'])
-            calc.calculate()
-            return (calc.pp, calc.sr)
+            if 'mr' in self.pp_attrs:
+                for mod in re.findall('.{1,2}', self.pp_attrs["mr"]):
+                    if mod != 'NM' and mod != 'V2':
+                        d.append(f'-m {mod}')
 
-        if self.mode_vn == 2:
-            return (0.0, 0.0)
+            pipe_diff = asyncio.subprocess.PIPE
+            proc_diff = await asyncio.create_subprocess_shell(' '.join(d), stdout=pipe_diff, stderr=pipe_diff)
+
+            dout, _ = await proc_diff.communicate()
+
+            if not (sr := float((re.findall('\d+(?:\.\d+)?', dout.decode()))[-1])):
+                sr = 0.0
+
+            if not (pp := calc.get('pp')):
+                pp = 0.0
+
+            await proc_diff.wait()
+            return pp, sr
