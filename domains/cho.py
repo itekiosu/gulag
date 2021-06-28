@@ -535,8 +535,11 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     if p.priv & Privileges.Nominator and not p.priv & Privileges.Dangerous:
         request = await glob.db.fetch('SELECT COUNT(id) AS count FROM requests')
         if int(request["count"]) > 0:
-            data += packets.notification(f'There is {request["count"]} outstanding map requests!')
-
+            if int(request["count"]) == 1:
+                data += packets.notification(f'There is {request["count"]} outstanding map request!')
+            elif int(request["count"]) > 1:
+                data += packets.notification(f'There are {request["count"]} outstanding map requests!')
+                    
     if int(user_info['frozen']) == 1:
         if dt.now().timestamp() > user_info['freezetime']:
             return (packets.notification('You are banned as a result of not providing a liveplay.') + packets.userID(-1)), 'no'
