@@ -252,6 +252,8 @@ class StatsUpdateRequest(BanchoPacket, type=Packets.OSU_REQUEST_STATUS_UPDATE):
 
 # no specific packet id, triggered when the
 # client sends a request without an osu-token.
+
+_plural = lambda a, b: f"{a}s" if b > 1 else a
 async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     # login is a bit special, we return the response bytes
     # and token in a tuple - we need both for our response.
@@ -535,7 +537,6 @@ async def login(origin: bytes, ip: str, headers) -> tuple[bytes, str]:
     if p.priv & Privileges.Nominator and not p.priv & Privileges.Dangerous:
         request = await glob.db.fetch('SELECT COUNT(id) AS count FROM requests')
         if int(request["count"]) > 0:
-            _plural = lambda a, b: f"{a}s" if b > 1 else a
             data += packets.notification(f'There is {request["count"]} outstanding map {_plural("request", request["count"])}!')
                     
     if int(user_info['frozen']) == 1:
